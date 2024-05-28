@@ -360,6 +360,30 @@ go
 --    where Maestra.REGLA_NOMBRE is not null
 --    ) as Regla
 
+--envio
+	INSERT INTO PERSISTENTES.Envio(envio_costo, envio_fecha_programada, envio_hora_inicio, envio_hora_fin, envio_fecha_entrega, envio_cliente, envio_estado, envio_ticket)
+		select distinct maestra_envio_costo, maestra_envio_fecha_programada, maestra_envio_hora_inicio, maestra_envio_hora_fin, maestra_envio_fecha_entrega, nueva_envio_cliente_id, 
+						nueva_envio_estado, nueva_envio_ticket_id
+		from (
+			select	maestra.ENVIO_COSTO as maestra_envio_costo,
+					maestra.ENVIO_FECHA_PROGRAMADA as maestra_envio_fecha_programada,
+					maestra.ENVIO_HORA_INICIO as maestra_envio_hora_inicio,
+					maestra.ENVIO_HORA_FIN as  maestra_envio_hora_fin,
+					maestra.ENVIO_FECHA_ENTREGA as maestra_envio_fecha_entrega,
+					nueva_envio_cliente_t.cliente_id as nueva_envio_cliente_id,
+					nueva_envio_estado_t.envio_estado as nueva_envio_estado,
+					nueva_envio_ticket_t.ticket_id as nueva_envio_ticket_id
+			from [GD1C2024].[gd_esquema].[Maestra]
+			LEFT JOIN PERSISTENTES.Cliente nueva_envio_cliente_t on nueva_envio_cliente_t.cliente_dni = maestra.CLIENTE_DNI
+			LEFT JOIN PERSISTENTES.EnvioEstado nueva_envio_estado_t on nueva_envio_estado_t.envio_estado = maestra.ENVIO_ESTADO
+			LEFT JOIN PERSISTENTES.Ticket nueva_envio_ticket_t on nueva_envio_ticket_t.ticket_numero = maestra.TICKET_NUMERO and nueva_envio_ticket_t.ticket_tipo_comprobante = maestra.TICKET_TIPO_COMPROBANTE
+				and nueva_envio_ticket_t.ticket_caja_sucursal = (select sucursal_id from PERSISTENTES.Sucursal s where s.sucursal_nombre = maestra.SUCURSAL_NOMBRE)
+				--and nueva_envio_ticket_t.ticket_empleado = (select legajo_empleado from PERSISTENTES.Empleado e where e.empleado_dni = maestra.EMPLEADO_DNI)
+				--and nueva_envio_ticket_t.ticket_fecha_hora = maestra.TICKET_FECHA_HORA
+				and nueva_envio_ticket_t.ticket_total_envio = Maestra.TICKET_TOTAL_ENVIO
+			where maestra.ENVIO_COSTO is not null
+		) as Envio
+
 
 EXEC migrar_datos
 go
