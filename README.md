@@ -1,0 +1,30 @@
+# PERSISTENTES
+
+- [x] Provincia
+- [x] Localidad
+- [x] Sucursal
+- [x] Super
+- [x] CondicionFiscal
+- [x] TipoCaja
+- [x] Caja
+- [x] Empleado
+- [x] Ticket
+- [ ] TicketDetalle
+- [x] TipoComprobante
+- [ ] Envio
+- [x] EnvioEstado
+- [x] Cliente
+- [ ] PromoAplicada
+- [ ] Promocion
+- [ ] PromocionPorProducto
+- [ ] Regla
+- [x] Producto
+- [x] Marca
+- [ ] Categoria
+- [ ] Pago
+- [x] MedioDePago
+- [x] TipoMedioDePago
+- [ ] DescuentoAplicado
+- [x] Descuento
+- [ ] DetallePagoTarjeta
+- [ ] ProductoPorCategoria 
