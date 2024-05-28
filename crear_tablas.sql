@@ -74,7 +74,7 @@ ALTER TABLE PERSISTENTES.Sucursal
 		add constraint FK_SucursalSuper
 		foreign key (sucursal_super) REFERENCES PERSISTENTES.Super
 
-CREATE TABLE PERSISTENTES.Tipo_caja
+CREATE TABLE PERSISTENTES.TipoCaja
 (
 	tipo_caja nvarchar(255) not null
 
@@ -96,7 +96,7 @@ ALTER TABLE PERSISTENTES.Caja
 
 ALTER TABLE PERSISTENTES.Caja
 		add constraint FK_CajaTipo
-		foreign key (caja_tipo) REFERENCES PERSISTENTES.Tipo_caja
+		foreign key (caja_tipo) REFERENCES PERSISTENTES.TipoCaja
 
 CREATE TABLE PERSISTENTES.Empleado
 (
