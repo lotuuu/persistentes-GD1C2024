@@ -193,19 +193,19 @@ from (
 	where maestra.TICKET_NUMERO is not null and maestra.EMPLEADO_DNI is not null
 	) as Ticket
 
-INSERT INTO PERSISTENTES.Pago
-	(pago_fecha, pago_importe, pago_medio_pago, pago_ticket)
-SELECT DISTINCT maestra_pago_fecha, maestra_pago_importe, nueva_pago_medio_pago, nueva_pago_ticket
-from (
-	select maestra.PAGO_FECHA as maestra_pago_fecha,
-		maestra.PAGO_IMPORTE as maestra_pago_importe,
-		nueva_MedioDePago_t.medio_de_pago nueva_pago_medio_pago,
-		nueva_Ticket_t.ticket_id nueva_pago_ticket
-	from [GD1C2024].[gd_esquema].[Maestra]
-		LEFT JOIN PERSISTENTES.Ticket nueva_Ticket_t on nueva_Ticket_t.ticket_numero = maestra.TICKET_NUMERO
-		LEFT JOIN PERSISTENTES.MedioDePago nueva_MedioDePago_t on nueva_MedioDePago_t.medio_de_pago = maestra.PAGO_MEDIO_PAGO
-	where maestra.PAGO_FECHA is not null and maestra.PAGO_IMPORTE is not null and maestra.PAGO_MEDIO_PAGO is not null and maestra.TICKET_NUMERO is not null
-) as Pago
+--INSERT INTO PERSISTENTES.Pago
+--	(pago_fecha, pago_importe, pago_medio_pago, pago_ticket)
+--SELECT DISTINCT maestra_pago_fecha, maestra_pago_importe, nueva_pago_medio_pago, nueva_pago_ticket
+--from (
+--	select maestra.PAGO_FECHA as maestra_pago_fecha,
+--		maestra.PAGO_IMPORTE as maestra_pago_importe,
+--		nueva_MedioDePago_t.medio_de_pago nueva_pago_medio_pago,
+--		nueva_Ticket_t.ticket_id nueva_pago_ticket
+--	from [GD1C2024].[gd_esquema].[Maestra]
+--		LEFT JOIN PERSISTENTES.Ticket nueva_Ticket_t on nueva_Ticket_t.ticket_numero = maestra.TICKET_NUMERO
+--		LEFT JOIN PERSISTENTES.MedioDePago nueva_MedioDePago_t on nueva_MedioDePago_t.medio_de_pago = maestra.PAGO_MEDIO_PAGO
+--	where maestra.PAGO_FECHA is not null and maestra.PAGO_IMPORTE is not null and maestra.PAGO_MEDIO_PAGO is not null and maestra.TICKET_NUMERO is not null
+--) as Pago
 
 --Cliente
 INSERT into PERSISTENTES.Cliente
