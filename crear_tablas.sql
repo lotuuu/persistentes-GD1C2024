@@ -441,6 +441,10 @@ alter table PERSISTENTES.PromocionPorProducto
 		add constraint FK_PromocionPorProductoProd 
 		foreign key (producto_id) references PERSISTENTES.Producto
 
+CREATE TABLE PERSISTENTES.SubcategoriaCategoria (
+    PRODUCTO_SUB_CATEGORIA NVARCHAR(255),
+    PRODUCTO_CATEGORIA NVARCHAR(255))
+
 
 go
 

@@ -281,17 +281,47 @@ from (
 	where Maestra.PROMO_CODIGO is not null
 	) as Promocion
 
+	--DEJO COMENTADO PARA GUARDAR EL CODIGO
+----Categoria
+--INSERT INTO PERSISTENTES.Categoria
+--	(categoria_nombre)
+--SELECT distinct PRODUCTO_CATEGORIA
+--from [GD1C2024].[gd_esquema].[Maestra]
+--where PRODUCTO_CATEGORIA is not null
+----Subcategoria
+--INSERT INTO PERSISTENTES.Categoria
+--	(categoria_nombre, categoria_madre)
+--select distinct PRODUCTO_SUB_CATEGORIA, c.categoria_id
+--from [GD1C2024].[gd_esquema].[Maestra]
+--	join PERSISTENTES.Categoria c on c.categoria_nombre = PRODUCTO_CATEGORIA
+
 --Categoria
-INSERT INTO PERSISTENTES.Categoria
-	(categoria_nombre)
-SELECT distinct PRODUCTO_CATEGORIA
-from [GD1C2024].[gd_esquema].[Maestra]
-where PRODUCTO_CATEGORIA is not null
---Subcategoria
-INSERT INTO PERSISTENTES.Categoria
-	(categoria_nombre, categoria_madre)
-select distinct PRODUCTO_SUB_CATEGORIA, c.categoria_id
-from [GD1C2024].[gd_esquema].[Maestra]
+	insert into PERSISTENTES.Categoria(categoria_nombre)
+	SELECT distinct PRODUCTO_CATEGORIA from [GD1C2024].[gd_esquema].[Maestra]
+	where PRODUCTO_CATEGORIA is not null
+
+
+INSERT INTO PERSISTENTES.SubcategoriaCategoria (PRODUCTO_SUB_CATEGORIA, PRODUCTO_CATEGORIA)
+SELECT DISTINCT PRODUCTO_SUB_CATEGORIA, PRODUCTO_CATEGORIA
+FROM (
+	SELECT PRODUCTO_SUB_CATEGORIA, PRODUCTO_CATEGORIA, COUNT(*) as cantidad
+	FROM [GD1C2024].[gd_esquema].[Maestra]
+	WHERE PRODUCTO_SUB_CATEGORIA IS NOT NULL AND PRODUCTO_CATEGORIA IS NOT NULL
+	GROUP BY PRODUCTO_SUB_CATEGORIA, PRODUCTO_CATEGORIA
+	) as subConsulta
+where cantidad = (
+	select max(cantidad)
+	from (	select count(*) as cantidad
+			from [GD1C2024].[gd_esquema].[Maestra]
+			where PRODUCTO_SUB_CATEGORIA = subConsulta.PRODUCTO_SUB_CATEGORIA and PRODUCTO_CATEGORIA is not null
+			group by PRODUCTO_CATEGORIA
+			) as otraConsulta
+	)
+
+--subcategoria
+	insert into PERSISTENTES.Categoria(categoria_nombre, categoria_madre)
+	select distinct PRODUCTO_SUB_CATEGORIA, c.categoria_id
+	from PERSISTENTES.SubcategoriaCategoria
 	join PERSISTENTES.Categoria c on c.categoria_nombre = PRODUCTO_CATEGORIA
 
 --Producto
