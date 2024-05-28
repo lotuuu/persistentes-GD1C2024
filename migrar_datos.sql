@@ -38,7 +38,7 @@ FROM (
 		) AS Localidad;
 
 --TipoCaja
-INSERT INTO PERSISTENTES.Tipo_caja
+INSERT INTO PERSISTENTES.TipoCaja
 	(tipo_caja)
 SELECT DISTINCT CAJA_TIPO
 FROM [GD1C2024].[gd_esquema].[Maestra]
@@ -140,7 +140,7 @@ from (
 		nueva_CajaTipo_t.tipo_caja nueva_caja_tipo_id
 	from [GD1C2024].[gd_esquema].[Maestra]
 		LEFT JOIN PERSISTENTES.Sucursal nueva_Sucursal_t on nueva_Sucursal_t.sucursal_nombre = maestra.SUCURSAL_NOMBRE
-		LEFT JOIN PERSISTENTES.Tipo_caja nueva_CajaTipo_t on nueva_CajaTipo_t.tipo_caja = maestra.CAJA_TIPO
+		LEFT JOIN PERSISTENTES.TipoCaja nueva_CajaTipo_t on nueva_CajaTipo_t.tipo_caja = maestra.CAJA_TIPO
 	where CAJA_NUMERO is not null or CAJA_TIPO is not null
     ) as Caja
 
@@ -193,6 +193,22 @@ from (
 	where maestra.TICKET_NUMERO is not null and maestra.EMPLEADO_DNI is not null
 	) as Ticket
 
+--TicketDetalle
+--INSERT INTO PERSISTENTES.TicketDetalle
+--	(ticket_det_ticket, ticket_det_producto, ticket_det_cantidad, ticket_det_total, ticket_det_precio)
+--SELECT distinct nueva_ticket_detalle_ticket, nueva_ticket_detalle_producto, maestra_ticket_detalle_cantidad, maestra_ticket_detalle_subtotal, maestra_ticket_detalle_precio_unitario
+--from (
+--		SELECT nueva_Ticket_t.ticket_id as nueva_ticket_detalle_ticket,
+--		nueva_Producto_t.producto_id as nueva_ticket_detalle_producto,
+--		maestra.TICKET_DET_CANTIDAD as maestra_ticket_detalle_cantidad,
+--		maestra.TICKET_DET_TOTAL as maestra_ticket_detalle_subtotal,
+--		maestra.TICKET_DET_PRECIO as maestra_ticket_detalle_precio_unitario
+--	from [GD1C2024].[gd_esquema].[Maestra]
+--		LEFT JOIN PERSISTENTES.Ticket nueva_Ticket_t on nueva_Ticket_t.ticket_numero = maestra.TICKET_NUMERO
+--		LEFT JOIN PERSISTENTES.Producto nueva_Producto_t on nueva_Producto_t.producto_nombre = maestra.PRODUCTO_NOMBRE
+--	where maestra.TICKET_NUMERO is not null and maestra.PRODUCTO_NOMBRE is not null
+--	) as TicketDetalle
+
 --INSERT INTO PERSISTENTES.Pago
 --	(pago_fecha, pago_importe, pago_medio_pago, pago_ticket)
 --SELECT DISTINCT maestra_pago_fecha, maestra_pago_importe, nueva_pago_medio_pago, nueva_pago_ticket
@@ -232,7 +248,17 @@ from (
 	) as Cliente
 
 
+--PromoAplicada
+--INSERT INTO PERSISTENTES.PromoAplicada
+--	(promo_aplicada_descuento)
+--SELECT distinct PROMO_APLICADA_DESCUENTO
+--from [GD1C2024].[gd_esquema].[Maestra]
+--where PROMO_APLICADA_DESCUENTO is not null
+
+
+
 --Promocion 
+--Falta agregar al insert promo_aplicada_id
 INSERT INTO PERSISTENTES.Promocion
 	(
 	promo_codigo,
@@ -240,22 +266,20 @@ INSERT INTO PERSISTENTES.Promocion
 	promocion_fecha_inicio,
 	promocion_fecha_fin)
 select distinct
-	maestra_promo_aplicada_descuento,
+	maestra_promo_codigo,
 	maestra_promocion_descripcion,
 	maestra_promocion_fecha_inicio,
 	maestra_promocion_fecha_fin
 from (
-   	 select
-		nueva_promo_aplicada.promo_aplicada_descuento as maestra_promo_aplicada_descuento,
+	select
+		Maestra.PROMO_CODIGO as maestra_promo_codigo,
 		Maestra.PROMOCION_DESCRIPCION as maestra_promocion_descripcion,
 		Maestra.PROMOCION_FECHA_INICIO as maestra_promocion_fecha_inicio,
 		Maestra.PROMOCION_FECHA_FIN as maestra_promocion_fecha_fin
-	from gd_esquema.Maestra
+	from [GD1C2024].[gd_esquema].[Maestra]
 		left join PERSISTENTES.PromoAplicada nueva_promo_aplicada on nueva_promo_aplicada.promo_aplicada_descuento = Maestra.PROMO_APLICADA_DESCUENTO
 	where Maestra.PROMO_CODIGO is not null
-    ) as Promocion
-
-
+	) as Promocion
 
 --Categoria
 INSERT INTO PERSISTENTES.Categoria
@@ -284,6 +308,28 @@ from (
 	where PRODUCTO_NOMBRE is not null
 	) as Producto
 go
+
+--INSERT INTO PERSISTENTES.Regla
+--    (regla_nombre, regla_descripcion, regla_fecha_inicio, regla_fecha_fin, regla_porcentaje, regla_tope)
+--SELECT distinct
+--    maestra_regla_nombre,
+--    maestra_regla_descripcion,
+--    maestra_regla_fecha_inicio,
+--    maestra_regla_fecha_fin,
+--    maestra_regla_porcentaje,
+--    maestra_regla_tope
+--from (
+--    select
+--        Maestra.REGLA_NOMBRE as maestra_regla_nombre,
+--        Maestra.REGLA_DESCRIPCION as maestra_regla_descripcion,
+--        Maestra.REGLA_FECHA_INICIO as maestra_regla_fecha_inicio,
+--        Maestra.REGLA_FECHA_FIN as maestra_regla_fecha_fin,
+--        Maestra.REGLA_PORCENTAJE as maestra_regla_porcentaje,
+--        Maestra.REGLA_TOPE as maestra_regla_tope
+--    from gd_esquema.Maestra
+--    where Maestra.REGLA_NOMBRE is not null
+--    ) as Regla
+
 
 EXEC migrar_datos
 go
