@@ -15,9 +15,9 @@
 - [x] EnvioEstado
 - [x] Cliente
 - [x] PromoAplicada
-- [ ] Promocion
-- [ ] PromocionPorProducto
-- [ ] Regla
+- [x] Promocion
+- [x] PromocionPorProducto
+- [x] Regla
 - [x] Producto
 - [x] Marca
 - [x] Categoria

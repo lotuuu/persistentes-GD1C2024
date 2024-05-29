@@ -382,11 +382,24 @@ alter table PERSISTENTES.TicketDetalle
 		add constraint FK_TicketDetalleProducto
 		foreign key (ticket_det_producto) references PERSISTENTES.Producto
 
+
+create table PERSISTENTES.Promocion
+(
+	promo_codigo decimal(18,0) not null,
+--	promo_aplicada_id int,
+	promocion_descripcion nvarchar(255),
+	promocion_fecha_inicio datetime,
+	promocion_fecha_fin datetime
+
+		constraint PK_Promocion PRIMARY KEY (promo_codigo)
+)
+
 create table PERSISTENTES.PromoAplicada
 (
 	promo_aplicada_id int IDENTITY,
 	promo_aplicada_ticketDet int,
-	promo_aplicada_descuento decimal(18,2)
+	promo_aplicada_descuento decimal(18,2),
+	promo_promocion decimal(18,0)
 
 		constraint PK_PromoAplicada PRIMARY KEY (promo_aplicada_id)
 )
@@ -395,21 +408,12 @@ alter table PERSISTENTES.PromoAplicada
 		add constraint FK_PromoAplicadaTicketDet
 		foreign key (promo_aplicada_ticketDet) references PERSISTENTES.TicketDetalle
 
+alter table PERSISTENTES.PromoAplicada
+		add constraint FK_PromoAplicadaPromocion
+		foreign key (promo_promocion) references PERSISTENTES.Promocion
 
-create table PERSISTENTES.Promocion
-(
-	promo_codigo decimal(18,0) not null,
-	promo_aplicada_id int,
-	promocion_descripcion nvarchar(255),
-	promocion_fecha_inicio datetime,
-	promocion_fecha_fin datetime
 
-		constraint PK_Promocion PRIMARY KEY (promo_codigo)
-)
 
-alter table PERSISTENTES.Promocion
-		add constraint FK_PromocionPromoAplicada
-		foreign key (promo_aplicada_id) references PERSISTENTES.PromoAplicada
 
 create table PERSISTENTES.Regla
 (
