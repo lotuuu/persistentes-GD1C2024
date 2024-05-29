@@ -194,19 +194,22 @@ from (
 	) as Ticket
 
 
---INSERT INTO PERSISTENTES.Pago
---	(pago_fecha, pago_importe, pago_medio_pago, pago_ticket)
---SELECT DISTINCT maestra_pago_fecha, maestra_pago_importe, nueva_pago_medio_pago, nueva_pago_ticket
---from (
---	select maestra.PAGO_FECHA as maestra_pago_fecha,
---		maestra.PAGO_IMPORTE as maestra_pago_importe,
---		nueva_MedioDePago_t.medio_de_pago nueva_pago_medio_pago,
---		nueva_Ticket_t.ticket_id nueva_pago_ticket
---	from [GD1C2024].[gd_esquema].[Maestra]
---		LEFT JOIN PERSISTENTES.Ticket nueva_Ticket_t on nueva_Ticket_t.ticket_numero = maestra.TICKET_NUMERO
---		LEFT JOIN PERSISTENTES.MedioDePago nueva_MedioDePago_t on nueva_MedioDePago_t.medio_de_pago = maestra.PAGO_MEDIO_PAGO
---	where maestra.PAGO_FECHA is not null and maestra.PAGO_IMPORTE is not null and maestra.PAGO_MEDIO_PAGO is not null and maestra.TICKET_NUMERO is not null
---) as Pago
+INSERT INTO PERSISTENTES.Pago
+	(pago_fecha, pago_importe, pago_medio_pago, pago_ticket)
+SELECT DISTINCT maestra_pago_fecha, maestra_pago_importe, nueva_pago_medio_pago, nueva_pago_ticket
+from (
+	select maestra.PAGO_FECHA as maestra_pago_fecha,
+		maestra.PAGO_IMPORTE as maestra_pago_importe,
+		nueva_MedioDePago_t.medio_de_pago nueva_pago_medio_pago,
+		nueva_Ticket_t.ticket_id as nueva_pago_ticket
+	from [GD1C2024].[gd_esquema].[Maestra]
+		LEFT JOIN PERSISTENTES.Ticket nueva_Ticket_t on nueva_Ticket_t.ticket_numero = maestra.TICKET_NUMERO and
+		nueva_Ticket_t.ticket_tipo_comprobante = maestra.TICKET_TIPO_COMPROBANTE and
+		nueva_Ticket_t.ticket_caja_sucursal = (select sucursal_id from PERSISTENTES.Sucursal where sucursal_nombre = maestra.SUCURSAL_NOMBRE) 
+		and nueva_ticket_t.ticket_total_ticket = maestra.PAGO_IMPORTE
+		LEFT JOIN PERSISTENTES.MedioDePago nueva_MedioDePago_t on nueva_MedioDePago_t.medio_de_pago = maestra.PAGO_MEDIO_PAGO
+	where maestra.PAGO_FECHA is not null and maestra.PAGO_IMPORTE is not null and maestra.PAGO_MEDIO_PAGO is not null and maestra.TICKET_NUMERO is not null
+) as Pago
 
 --Cliente
 INSERT into PERSISTENTES.Cliente
@@ -342,7 +345,6 @@ from (
 		left join PERSISTENTES.Categoria nueva_producto_categoria_t on nueva_producto_categoria_t.categoria_nombre = maestra.PRODUCTO_SUB_CATEGORIA
 	where PRODUCTO_NOMBRE is not null
 	) as Producto
-go
 
 --TicketDetalle
 INSERT INTO PERSISTENTES.TicketDetalle
@@ -464,9 +466,6 @@ insert into PERSISTENTES.Regla
 		WHERE Maestra.TICKET_NUMERO IS NOT NULL AND Maestra.TICKET_DET_PRECIO IS NOT NULL AND Maestra.TICKET_DET_TOTAL IS NOT NULL AND Maestra.PROMO_APLICADA_DESCUENTO IS NOT NULL
 	) as PromoAplicada
 
-	select * from PERSISTENTES.PromoAplicada
-	order by promo_aplicada_ticketDet
-
 --promocionPorProducto
 insert into PERSISTENTES.PromocionPorProducto(promo_codigo,producto_id)
 	select distinct nueva_promo_codigo, nueva_producto_id
@@ -480,10 +479,7 @@ insert into PERSISTENTES.PromocionPorProducto(promo_codigo,producto_id)
 		nueva_producto_t.producto_precio = maestra.PRODUCTO_PRECIO
 		where maestra.PRODUCTO_NOMBRE is not null and maestra.PROMO_CODIGO is not null
 	) as PromocionPorProducto
-
-
-select PROMO_APLICADA_DESCUENTO from gd_esquema.Maestra order by PROMO_APLICADA_DESCUENTO
-select * from PERSISTENTES.Promocion
+go
 
 EXEC migrar_datos
 go
