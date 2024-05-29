@@ -269,13 +269,14 @@ alter table PERSISTENTES.Pago
 
 create table PERSISTENTES.DetallePagoTarjeta
 (
-	detalle_pago_id int IDENTITY,
+	detalle_pago_tarjeta_id int IDENTITY,
 	detalle_pago_tarjeta_nro nvarchar(50),
 	detalle_pago_tarjeta_cuotas decimal(18,0),
 	detalle_pago_tarjeta_fecha_vencimiento datetime,
 	detalle_pago_cliente int,
+	detalle_pago_id int,
 
-	constraint PK_DetallePago PRIMARY KEY (detalle_pago_id)
+	constraint PK_DetallePago PRIMARY KEY (detalle_pago_tarjeta_id)
 )
 
 alter table PERSISTENTES.DetallePagoTarjeta
