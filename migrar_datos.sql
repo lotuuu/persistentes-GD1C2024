@@ -411,5 +411,56 @@ from (
 		) as Envio
 
 
+--PromoAplicada
+	INSERT INTO PERSISTENTES.PromoAplicada
+		(promo_aplicada_ticketDet,
+		promo_aplicada_descuento)
+	select distinct
+		nuevo_detalle_ticket_promo_aplicada_ticketDet,
+		maestra_promo_aplicada_descuento
+	from (
+		select 
+			nuevo_detalle_ticket.ticket_det_ticket as nuevo_detalle_ticket_promo_aplicada_ticketDet,
+			Maestra.PROMO_APLICADA_DESCUENTO as maestra_promo_aplicada_descuento
+		from [GD1C2024].[gd_esquema].[Maestra]
+			left join PERSISTENTES.TicketDetalle nuevo_detalle_ticket
+			on nuevo_detalle_ticket.ticket_det_cantidad = Maestra.TICKET_DET_CANTIDAD and
+			nuevo_detalle_ticket.ticket_det_precio = Maestra.TICKET_DET_PRECIO and
+			nuevo_detalle_ticket.ticket_det_total = Maestra.TICKET_DET_TOTAL
+		where Maestra.TICKET_NUMERO is not null and
+		Maestra.TICKET_DET_PRECIO is not null and
+		Maestra.TICKET_DET_TOTAL is not null
+	) as PromoAplicada
+
+
+--Promocion 
+--Falta agregar al insert promo_aplicada_id
+INSERT INTO PERSISTENTES.Promocion
+	(
+	promo_codigo,
+	promo_aplicada_id,
+	promocion_descripcion,
+	promocion_fecha_inicio,
+	promocion_fecha_fin)
+select distinct
+	maestra_promo_codigo,
+	nueva_promo_aplicada_promo_aplicada_id,
+	maestra_promocion_descripcion,
+	maestra_promocion_fecha_inicio,
+	maestra_promocion_fecha_fin
+from (
+	select
+		Maestra.PROMO_CODIGO as maestra_promo_codigo,
+		nueva_promo_aplicada.promo_aplicada_id as nueva_promo_aplicada_promo_aplicada_id,
+		Maestra.PROMOCION_DESCRIPCION as maestra_promocion_descripcion,
+		Maestra.PROMOCION_FECHA_INICIO as maestra_promocion_fecha_inicio,
+		Maestra.PROMOCION_FECHA_FIN as maestra_promocion_fecha_fin
+	from [GD1C2024].[gd_esquema].[Maestra]
+		left join PERSISTENTES.PromoAplicada nueva_promo_aplicada on nueva_promo_aplicada.promo_aplicada_descuento = Maestra.PROMO_APLICADA_DESCUENTO
+	where Maestra.PROMO_APLICADA_DESCUENTO is not null
+	) as Promocion
+select PROMO_APLICADA_DESCUENTO from gd_esquema.Maestra order by PROMO_APLICADA_DESCUENTO
+select * from PERSISTENTES.Promocion
+
 EXEC migrar_datos
 go
