@@ -21,7 +21,7 @@
 - [x] Producto
 - [x] Marca
 - [x] Categoria
-- [ ] Pago
+- [x] Pago
 - [x] MedioDePago
 - [x] TipoMedioDePago
 - [X] DescuentoAplicado
