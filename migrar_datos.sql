@@ -262,27 +262,27 @@ INSERT INTO PERSISTENTES.DescuentoAplicado(
 
 --Promocion 
 --Falta agregar al insert promo_aplicada_id
-INSERT INTO PERSISTENTES.Promocion
-	(
-	promo_codigo,
-	promocion_descripcion,
-	promocion_fecha_inicio,
-	promocion_fecha_fin)
-select distinct
-	maestra_promo_codigo,
-	maestra_promocion_descripcion,
-	maestra_promocion_fecha_inicio,
-	maestra_promocion_fecha_fin
-from (
-	select
-		Maestra.PROMO_CODIGO as maestra_promo_codigo,
-		Maestra.PROMOCION_DESCRIPCION as maestra_promocion_descripcion,
-		Maestra.PROMOCION_FECHA_INICIO as maestra_promocion_fecha_inicio,
-		Maestra.PROMOCION_FECHA_FIN as maestra_promocion_fecha_fin
-	from [GD1C2024].[gd_esquema].[Maestra]
-		left join PERSISTENTES.PromoAplicada nueva_promo_aplicada on nueva_promo_aplicada.promo_aplicada_descuento = Maestra.PROMO_APLICADA_DESCUENTO
-	where Maestra.PROMO_CODIGO is not null
-	) as Promocion
+--INSERT INTO PERSISTENTES.Promocion
+--	(
+--	promo_codigo,
+--	promocion_descripcion,
+--	promocion_fecha_inicio,
+--	promocion_fecha_fin)
+--select distinct
+--	maestra_promo_codigo,
+--	maestra_promocion_descripcion,
+--	maestra_promocion_fecha_inicio,
+--	maestra_promocion_fecha_fin
+--from (
+--	select
+--		Maestra.PROMO_CODIGO as maestra_promo_codigo,
+--		Maestra.PROMOCION_DESCRIPCION as maestra_promocion_descripcion,
+--		Maestra.PROMOCION_FECHA_INICIO as maestra_promocion_fecha_inicio,
+--		Maestra.PROMOCION_FECHA_FIN as maestra_promocion_fecha_fin
+--	from [GD1C2024].[gd_esquema].[Maestra]
+--		left join PERSISTENTES.PromoAplicada nueva_promo_aplicada on nueva_promo_aplicada.promo_aplicada_descuento = Maestra.PROMO_APLICADA_DESCUENTO
+--	where Maestra.PROMO_CODIGO is not null
+--	) as Promocion
 
 	--DEJO COMENTADO PARA GUARDAR EL CODIGO
 ----Categoria
@@ -426,11 +426,20 @@ from (
 			left join PERSISTENTES.TicketDetalle nuevo_detalle_ticket
 			on nuevo_detalle_ticket.ticket_det_cantidad = Maestra.TICKET_DET_CANTIDAD and
 			nuevo_detalle_ticket.ticket_det_precio = Maestra.TICKET_DET_PRECIO and
-			nuevo_detalle_ticket.ticket_det_total = Maestra.TICKET_DET_TOTAL
+			nuevo_detalle_ticket.ticket_det_total = Maestra.TICKET_DET_TOTAL and
+			nuevo_detalle_ticket.ticket_det_producto = (select producto_id from PERSISTENTES.Producto p where p.producto_nombre = maestra.PRODUCTO_NOMBRE
+			and p.producto_marca_id = (select marca_id from PERSISTENTES.Marca m where m.marca_nombre = maestra.PRODUCTO_MARCA)
+			and p.producto_precio = Maestra.PRODUCTO_PRECIO)
+			and nuevo_detalle_ticket.ticket_det_ticket = (select ticket_id from PERSISTENTES.Ticket t where t.ticket_numero = maestra.TICKET_NUMERO and
+			t.ticket_tipo_comprobante = maestra.TICKET_TIPO_COMPROBANTE and t.ticket_caja_sucursal = (select sucursal_id from PERSISTENTES.Sucursal s where s.sucursal_nombre = Maestra.SUCURSAL_NOMBRE)
+			and t.ticket_total_ticket = maestra.TICKET_TOTAL_TICKET)
 		where Maestra.TICKET_NUMERO is not null and
 		Maestra.TICKET_DET_PRECIO is not null and
-		Maestra.TICKET_DET_TOTAL is not null
+		Maestra.TICKET_DET_TOTAL is not null and PROMO_APLICADA_DESCUENTO is not null
 	) as PromoAplicada
+
+	select * from PERSISTENTES.PromoAplicada
+	order by promo_aplicada_ticketDet
 
 
 --Promocion 
