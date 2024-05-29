@@ -27,4 +27,4 @@
 - [X] DescuentoAplicado
 - [x] Descuento
 - [ ] DetallePagoTarjeta
-- [ ] ProductoPorCategoria 
+- [ ] ProductoPorCategoria (no se necesita por ahora)
