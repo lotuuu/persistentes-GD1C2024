@@ -193,7 +193,7 @@ from (
 	where maestra.TICKET_NUMERO is not null and maestra.EMPLEADO_DNI is not null
 	) as Ticket
 
-
+--Pago
 INSERT INTO PERSISTENTES.Pago
 	(pago_fecha, pago_importe, pago_medio_pago, pago_ticket)
 SELECT DISTINCT maestra_pago_fecha, maestra_pago_importe, nueva_pago_medio_pago, nueva_pago_ticket
@@ -210,6 +210,30 @@ from (
 		LEFT JOIN PERSISTENTES.MedioDePago nueva_MedioDePago_t on nueva_MedioDePago_t.medio_de_pago = maestra.PAGO_MEDIO_PAGO
 	where maestra.PAGO_FECHA is not null and maestra.PAGO_IMPORTE is not null and maestra.PAGO_MEDIO_PAGO is not null and maestra.TICKET_NUMERO is not null
 ) as Pago
+
+--DetallePagoTarjeta
+INSERT INTO PERSISTENTES.DetallePagoTarjeta
+	(detalle_pago_id, detalle_pago_tarjeta_cuotas, detalle_pago_tarjeta_nro, detalle_pago_tarjeta_fecha_vencimiento, detalle_pago_cliente)
+SELECT distinct nueva_pago_id, maestra_detalle_pago_tarjeta_cuotas, maestra_detalle_pago_tarjeta_nro, nueva_detalle_pago_tarjeta_fecha_vencimiento, nueva_detalle_pago_cliente
+FROM (
+		SELECT nueva_Pago_t.pago_id as nueva_pago_id,
+		maestra.PAGO_TARJETA_CUOTAS as maestra_detalle_pago_tarjeta_cuotas,
+		maestra.PAGO_TARJETA_NRO as maestra_detalle_pago_tarjeta_nro,
+		maestra.PAGO_TARJETA_FECHA_VENC as nueva_detalle_pago_tarjeta_fecha_vencimiento,
+		nueva_Cliente_t.cliente_id as nueva_detalle_pago_cliente
+	FROM [GD1C2024].[gd_esquema].[Maestra] maestra
+		LEFT JOIN PERSISTENTES.Pago nueva_Pago_t on nueva_Pago_t.pago_fecha = maestra.PAGO_FECHA and nueva_Pago_t.pago_importe = maestra.PAGO_IMPORTE and nueva_Pago_t.pago_medio_pago = maestra.PAGO_TIPO_MEDIO_PAGO and nueva_Pago_t.pago_ticket = (
+			select ticket_id
+			from PERSISTENTES.Ticket
+			where ticket_numero = maestra.TICKET_NUMERO and ticket_tipo_comprobante = maestra.TICKET_TIPO_COMPROBANTE and ticket_caja_sucursal = (
+				select sucursal_id
+				from PERSISTENTES.Sucursal
+				where sucursal_nombre = maestra.SUCURSAL_NOMBRE
+			)
+		)
+		LEFT JOIN PERSISTENTES.Cliente nueva_Cliente_t on nueva_Cliente_t.cliente_dni = maestra.CLIENTE_DNI
+	) as DetallePagoTarjeta
+
 
 --Cliente
 INSERT into PERSISTENTES.Cliente
