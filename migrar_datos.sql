@@ -232,7 +232,25 @@ from (
 	where maestra.CLIENTE_DNI is not null
 	) as Cliente
 
-
+INSERT INTO PERSISTENTES.DescuentoAplicado(
+		descuento_aplicado_descuento,
+		descuento_aplicado_pago,
+		descuento_aplicado_cant)
+	select distinct
+		maestra_descuento_aplicado_descuento,
+		maestra_descuento_aplicado_pago,
+		maestra_descuento_aplicado_cant
+	from (
+		select 
+			nuevo_descuento.descuento_codigo as maestra_descuento_aplicado_descuento,
+			nuevo_pago.pago_id as maestra_descuento_aplicado_pago,
+			Maestra.PAGO_DESCUENTO_APLICADO as maestra_descuento_aplicado_cant
+		from [GD1C2024].[gd_esquema].[Maestra]
+			left join PERSISTENTES.Descuento nuevo_descuento on nuevo_descuento.descuento_codigo = Maestra.DESCUENTO_CODIGO
+			left join PERSISTENTES.Pago nuevo_pago on nuevo_pago.pago_importe = Maestra.PAGO_IMPORTE
+		where Maestra.DESCUENTO_CODIGO is not null and Maestra.PAGO_IMPORTE is not null
+	) as DescuentoAplicado
+	
 --PromoAplicada
 --INSERT INTO PERSISTENTES.PromoAplicada
 --	(promo_aplicada_descuento)
