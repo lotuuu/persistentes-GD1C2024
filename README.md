@@ -9,9 +9,9 @@
 - [x] Caja
 - [x] Empleado
 - [x] Ticket
-- [ ] TicketDetalle
+- [x] TicketDetalle
 - [x] TipoComprobante
-- [ ] Envio
+- [x] Envio
 - [x] EnvioEstado
 - [x] Cliente
 - [ ] PromoAplicada
@@ -20,7 +20,7 @@
 - [ ] Regla
 - [x] Producto
 - [x] Marca
-- [ ] Categoria
+- [x] Categoria
 - [ ] Pago
 - [x] MedioDePago
 - [x] TipoMedioDePago
