@@ -14,7 +14,7 @@
 - [x] Envio
 - [x] EnvioEstado
 - [x] Cliente
-- [ ] PromoAplicada
+- [x] PromoAplicada
 - [ ] Promocion
 - [ ] PromocionPorProducto
 - [ ] Regla
