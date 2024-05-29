@@ -345,21 +345,21 @@ alter table PERSISTENTES.Producto
 	add constraint FK_ProductoCategoria
 	foreign key (producto_categoria) references PERSISTENTES.Categoria
 
-create table PERSISTENTES.ProductoPorCategoria
-(
-	producto_id int not null,
-	categoria_id int not null
+--create table PERSISTENTES.ProductoPorCategoria
+--(
+--	producto_id int not null,
+--	categoria_id int not null
 
-		constraint PK_ProductoPorCategoria PRIMARY KEY (producto_id, categoria_id)
-)
+--		constraint PK_ProductoPorCategoria PRIMARY KEY (producto_id, categoria_id)
+--)
 
-alter table PERSISTENTES.ProductoPorCategoria
-		add constraint FK_ProductoPorCategoriaProducto
-		foreign key (producto_id) references PERSISTENTES.Producto
+--alter table PERSISTENTES.ProductoPorCategoria
+--		add constraint FK_ProductoPorCategoriaProducto
+--		foreign key (producto_id) references PERSISTENTES.Producto
 
-alter table PERSISTENTES.ProductoPorCategoria
-		add constraint FK_ProductoPorCategoriaCategoria
-		foreign key (categoria_id) references PERSISTENTES.Categoria
+--alter table PERSISTENTES.ProductoPorCategoria
+--		add constraint FK_ProductoPorCategoriaCategoria
+--		foreign key (categoria_id) references PERSISTENTES.Categoria
 
 
 create table PERSISTENTES.TicketDetalle

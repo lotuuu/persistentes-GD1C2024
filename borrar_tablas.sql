@@ -1,4 +1,4 @@
-DROP TABLE PERSISTENTES.ProductoPorCategoria
+--DROP TABLE PERSISTENTES.ProductoPorCategoria --no se utiliza, lo dejo comentado por si lo necesitan borrar. sacar antes de entregar
 DROP TABLE PERSISTENTES.PromocionPorProducto
 DROP TABLE PERSISTENTES.Regla
 DROP TABLE PERSISTENTES.PromoAplicada
