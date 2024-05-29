@@ -330,7 +330,8 @@ create table PERSISTENTES.Producto
 	producto_nombre nvarchar(255),
 	producto_marca_id int,
 	producto_descripcion nvarchar(255),
-	producto_precio decimal(18,2)
+	producto_precio decimal(18,2),
+	producto_categoria int
 
 		constraint PK_Producto PRIMARY KEY (producto_id)
 )
@@ -339,6 +340,10 @@ create table PERSISTENTES.Producto
 alter table PERSISTENTES.Producto
 		add constraint FK_ProductoMarca
 		foreign key (producto_marca_id) references PERSISTENTES.Marca
+
+alter table PERSISTENTES.Producto
+	add constraint FK_ProductoCategoria
+	foreign key (producto_categoria) references PERSISTENTES.Categoria
 
 create table PERSISTENTES.ProductoPorCategoria
 (
@@ -359,13 +364,14 @@ alter table PERSISTENTES.ProductoPorCategoria
 
 create table PERSISTENTES.TicketDetalle
 (
-	ticket_det_ticket int not null,
-	ticket_det_producto int not null,
+	ticket_det_id int IDENTITY,
+	ticket_det_ticket int,
+	ticket_det_producto int,
 	ticket_det_cantidad decimal(18,0),
 	ticket_det_total decimal(18,2),
 	ticket_det_precio decimal(18,2)
 
-		constraint PK_TicketDetalle PRIMARY KEY (ticket_det_ticket, ticket_det_producto)
+		constraint PK_TicketDetalle PRIMARY KEY (ticket_det_id)
 )
 
 alter table PERSISTENTES.TicketDetalle
@@ -379,8 +385,7 @@ alter table PERSISTENTES.TicketDetalle
 create table PERSISTENTES.PromoAplicada
 (
 	promo_aplicada_id int IDENTITY,
-	promo_aplicada_ticketDet_ticket int,
-	promo_aplicada_ticketDet_producto int,
+	promo_aplicada_ticketDet int,
 	promo_aplicada_descuento decimal(18,2)
 
 		constraint PK_PromoAplicada PRIMARY KEY (promo_aplicada_id)
@@ -388,7 +393,7 @@ create table PERSISTENTES.PromoAplicada
 
 alter table PERSISTENTES.PromoAplicada
 		add constraint FK_PromoAplicadaTicketDet
-		foreign key (promo_aplicada_ticketDet_ticket, promo_aplicada_ticketDet_producto) references PERSISTENTES.TicketDetalle(ticket_det_ticket, ticket_det_producto)
+		foreign key (promo_aplicada_ticketDet) references PERSISTENTES.TicketDetalle
 
 
 create table PERSISTENTES.Promocion

@@ -193,21 +193,6 @@ from (
 	where maestra.TICKET_NUMERO is not null and maestra.EMPLEADO_DNI is not null
 	) as Ticket
 
---TicketDetalle
---INSERT INTO PERSISTENTES.TicketDetalle
---	(ticket_det_ticket, ticket_det_producto, ticket_det_cantidad, ticket_det_total, ticket_det_precio)
---SELECT distinct nueva_ticket_detalle_ticket, nueva_ticket_detalle_producto, maestra_ticket_detalle_cantidad, maestra_ticket_detalle_subtotal, maestra_ticket_detalle_precio_unitario
---from (
---		SELECT nueva_Ticket_t.ticket_id as nueva_ticket_detalle_ticket,
---		nueva_Producto_t.producto_id as nueva_ticket_detalle_producto,
---		maestra.TICKET_DET_CANTIDAD as maestra_ticket_detalle_cantidad,
---		maestra.TICKET_DET_TOTAL as maestra_ticket_detalle_subtotal,
---		maestra.TICKET_DET_PRECIO as maestra_ticket_detalle_precio_unitario
---	from [GD1C2024].[gd_esquema].[Maestra]
---		LEFT JOIN PERSISTENTES.Ticket nueva_Ticket_t on nueva_Ticket_t.ticket_numero = maestra.TICKET_NUMERO
---		LEFT JOIN PERSISTENTES.Producto nueva_Producto_t on nueva_Producto_t.producto_nombre = maestra.PRODUCTO_NOMBRE
---	where maestra.TICKET_NUMERO is not null and maestra.PRODUCTO_NOMBRE is not null
---	) as TicketDetalle
 
 --INSERT INTO PERSISTENTES.Pago
 --	(pago_fecha, pago_importe, pago_medio_pago, pago_ticket)
@@ -326,18 +311,41 @@ where cantidad = (
 
 --Producto
 INSERT INTO PERSISTENTES.Producto
-	(producto_nombre, producto_descripcion, producto_precio, producto_marca_id)
-select distinct maestra_producto_nombre, maestra_producto_descripcion, maestra_producto_precio, nueva_producto_marca
+	(producto_nombre, producto_descripcion, producto_precio, producto_marca_id, producto_categoria)
+select distinct maestra_producto_nombre, maestra_producto_descripcion, maestra_producto_precio, nueva_producto_marca, nueva_producto_categoria
 from (
 		select maestra.PRODUCTO_NOMBRE as maestra_producto_nombre,
 		maestra.PRODUCTO_DESCRIPCION as maestra_producto_descripcion,
 		maestra.PRODUCTO_PRECIO as maestra_producto_precio,
-		nueva_producto_marca_t.marca_id as nueva_producto_marca
+		nueva_producto_marca_t.marca_id as nueva_producto_marca,
+		nueva_producto_categoria_t.categoria_id as nueva_producto_categoria
 	from [GD1C2024].[gd_esquema].[Maestra]
 		left join PERSISTENTES.Marca nueva_producto_marca_t on nueva_producto_marca_t.marca_nombre = PRODUCTO_MARCA
+		left join PERSISTENTES.Categoria nueva_producto_categoria_t on nueva_producto_categoria_t.categoria_nombre = maestra.PRODUCTO_SUB_CATEGORIA
 	where PRODUCTO_NOMBRE is not null
 	) as Producto
 go
+
+--TicketDetalle
+INSERT INTO PERSISTENTES.TicketDetalle
+	(ticket_det_ticket, ticket_det_producto, ticket_det_cantidad, ticket_det_total, ticket_det_precio)
+SELECT distinct nueva_ticket_detalle_ticket, nueva_ticket_detalle_producto, maestra_ticket_detalle_cantidad, maestra_ticket_detalle_subtotal, maestra_ticket_detalle_precio_unitario
+from (
+		SELECT nueva_Ticket_t.ticket_id as nueva_ticket_detalle_ticket,
+		nueva_Producto_t.producto_id as nueva_ticket_detalle_producto,
+		maestra.TICKET_DET_CANTIDAD as maestra_ticket_detalle_cantidad,
+		maestra.TICKET_DET_TOTAL as maestra_ticket_detalle_subtotal,
+		maestra.TICKET_DET_PRECIO as maestra_ticket_detalle_precio_unitario
+	from [GD1C2024].[gd_esquema].[Maestra]
+		LEFT JOIN PERSISTENTES.Ticket nueva_Ticket_t on nueva_Ticket_t.ticket_numero = maestra.TICKET_NUMERO and
+			nueva_ticket_t.ticket_caja_sucursal = (select sucursal_id from PERSISTENTES.Sucursal where sucursal_nombre = maestra.SUCURSAL_NOMBRE) and
+			nueva_ticket_t.ticket_tipo_comprobante = maestra.TICKET_TIPO_COMPROBANTE and
+			nueva_ticket_t.ticket_total_ticket = Maestra.TICKET_TOTAL_TICKET
+		LEFT JOIN PERSISTENTES.Producto nueva_Producto_t on nueva_Producto_t.producto_nombre = maestra.PRODUCTO_NOMBRE and
+		nueva_Producto_t.producto_marca_id = (select marca_id from PERSISTENTES.Marca where marca_nombre = maestra.PRODUCTO_MARCA)
+		and nueva_Producto_t.producto_precio = TICKET_DET_PRECIO
+	where maestra.TICKET_NUMERO is not null and maestra.PRODUCTO_NOMBRE is not null
+	) as TicketDetalle
 
 --INSERT INTO PERSISTENTES.Regla
 --    (regla_nombre, regla_descripcion, regla_fecha_inicio, regla_fecha_fin, regla_porcentaje, regla_tope)
