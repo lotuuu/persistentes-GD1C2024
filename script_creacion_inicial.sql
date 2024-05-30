@@ -8,6 +8,7 @@ go
 --CREACION DE TABLAS
 CREATE PROCEDURE crear_tablas
 as
+-- Crear tabla Provincia
 CREATE TABLE PERSISTENTES.Provincia
 (
 	provincia_id int IDENTITY,
@@ -15,6 +16,7 @@ CREATE TABLE PERSISTENTES.Provincia
 	CONSTRAINT PK_Provincia PRIMARY KEY (provincia_id)
 )
 
+-- Crear tabla Localidad
 CREATE TABLE PERSISTENTES.Localidad
 (
 	localidad_id int IDENTITY,
@@ -24,16 +26,19 @@ CREATE TABLE PERSISTENTES.Localidad
 		CONSTRAINT PK_Localidad PRIMARY KEY (localidad_id)
 )
 
+-- Crear referencia de Localidad a Provincia
 ALTER TABLE PERSISTENTES.Localidad
 		add constraint FK_LocalidadProvincia
 		foreign key (localidad_provincia) REFERENCES PERSISTENTES.Provincia
 
+-- Crear tabla CondicionFiscal
 CREATE TABLE PERSISTENTES.CondicionFiscal
 (
 	condicion_fiscal nvarchar(255) not null
 		CONSTRAINT PK_CondicionFiscal PRIMARY KEY (condicion_fiscal)
 )
 
+-- Crear tabla Super
 CREATE TABLE PERSISTENTES.Super
 (
 	super_nro int IDENTITY,
@@ -49,14 +54,17 @@ CREATE TABLE PERSISTENTES.Super
 		CONSTRAINT PK_Super PRIMARY KEY (super_nro)
 )
 
+-- Crear referencia de Super a Localidad
 ALTER TABLE PERSISTENTES.Super
 		add constraint FK_SuperLocalidad
 		foreign key (super_localidad_id) REFERENCES PERSISTENTES.Localidad
 
+-- Crear referencia de Super a CondicionFiscal
 ALTER TABLE PERSISTENTES.Super
 		add constraint FK_SuperCondicionFiscal
 		foreign key (super_condicion_fiscal_id) references PERSISTENTES.CondicionFiscal
 
+-- Crear tabla Sucursal
 CREATE TABLE PERSISTENTES.Sucursal
 (
 	sucursal_id int IDENTITY,
@@ -68,14 +76,17 @@ CREATE TABLE PERSISTENTES.Sucursal
 		CONSTRAINT PK_Sucursal PRIMARY KEY (sucursal_id)
 )
 
+-- Crear referencia de Sucursal a Localidad
 ALTER TABLE PERSISTENTES.Sucursal
 		add constraint FK_SucursalLocalidad
 		foreign key (sucursal_localidad_id) REFERENCES PERSISTENTES.Localidad
 
+-- Crear referencia de Sucursal a Super
 ALTER TABLE PERSISTENTES.Sucursal
 		add constraint FK_SucursalSuper
 		foreign key (sucursal_super) REFERENCES PERSISTENTES.Super
 
+-- Crear tabla TipoCaja
 CREATE TABLE PERSISTENTES.TipoCaja
 (
 	tipo_caja nvarchar(255) not null
@@ -83,6 +94,7 @@ CREATE TABLE PERSISTENTES.TipoCaja
 		CONSTRAINT PK_TipoCaja PRIMARY KEY (tipo_caja)
 )
 
+-- Crear tabla Caja
 CREATE TABLE PERSISTENTES.Caja
 (
 	caja_nro decimal(18,0) not null,
@@ -92,14 +104,17 @@ CREATE TABLE PERSISTENTES.Caja
 		CONSTRAINT PK_Caja PRIMARY KEY (caja_nro, caja_sucursal)
 )
 
+-- Crear referencia de Caja a Sucursal
 ALTER TABLE PERSISTENTES.Caja
 		add constraint FK_CajaSucursal
 		foreign key (caja_sucursal) REFERENCES PERSISTENTES.Sucursal
 
+-- Crear referencia de Caja a TipoCaja
 ALTER TABLE PERSISTENTES.Caja
 		add constraint FK_CajaTipo
 		foreign key (caja_tipo) REFERENCES PERSISTENTES.TipoCaja
 
+-- Crear tabla Empleado
 CREATE TABLE PERSISTENTES.Empleado
 (
 	legajo_empleado int IDENTITY,
@@ -115,10 +130,12 @@ CREATE TABLE PERSISTENTES.Empleado
 		CONSTRAINT PK_Empleado PRIMARY KEY (legajo_empleado)
 )
 
+-- Crear referencia de Empleado a Sucursal
 ALTER TABLE PERSISTENTES.Empleado
 		add constraint FK_EmpleadoSucursal
 		foreign key (empleado_sucursal) REFERENCES PERSISTENTES.Sucursal
 
+-- Crear tabla Cliente
 CREATE TABLE PERSISTENTES.Cliente
 (
 	cliente_id int IDENTITY,
@@ -135,10 +152,12 @@ CREATE TABLE PERSISTENTES.Cliente
 		CONSTRAINT PK_Cliente PRIMARY KEY (cliente_id)
 )
 
+-- Crear referencia de Cliente a Localidad
 ALTER TABLE PERSISTENTES.Cliente
 		add constraint FK_ClienteLocalidad
 		foreign key (cliente_localidad_id) REFERENCES PERSISTENTES.Localidad
 
+-- Crear tabla TipoComprobante
 create table PERSISTENTES.TipoComprobante
 (
 	tipo_comprobante nvarchar(255) not null
@@ -146,6 +165,7 @@ create table PERSISTENTES.TipoComprobante
 		constraint PK_TipoComprobante PRIMARY KEY (tipo_comprobante)
 )
 
+-- Crear tabla Ticket
 create table PERSISTENTES.Ticket
 (
 	ticket_id int IDENTITY,
@@ -164,18 +184,22 @@ create table PERSISTENTES.Ticket
 		constraint PK_Ticket PRIMARY KEY (ticket_id)
 )
 
+-- Crear referencia de Ticket a Caja
 alter table PERSISTENTES.Ticket
 		add constraint FK_TicketCaja
 		foreign key (ticket_caja_nro, ticket_caja_sucursal) references PERSISTENTES.Caja(caja_nro, caja_sucursal)
 
+-- Crear referencia de Ticket a TipoComprobante
 alter table PERSISTENTES.Ticket
 		add constraint FK_TicketTipoComprobante
 		foreign key (ticket_tipo_comprobante) references PERSISTENTES.TipoComprobante
 
+-- Crear referencia de Ticket a Empleado
 alter table PERSISTENTES.Ticket
 		add constraint FK_TicketEmpleado
 		foreign key (ticket_empleado) references PERSISTENTES.Empleado
 
+-- Crear tabla EnvioEstado
 create table PERSISTENTES.EnvioEstado
 (
 	envio_estado nvarchar(255) not null
@@ -183,6 +207,7 @@ create table PERSISTENTES.EnvioEstado
 		constraint PK_EnvioEstado PRIMARY KEY (envio_estado)
 )
 
+-- Crear tabla Envio
 create table PERSISTENTES.Envio
 (
 	envio_id int IDENTITY,
@@ -198,18 +223,22 @@ create table PERSISTENTES.Envio
 		constraint PK_Envio PRIMARY KEY (envio_id)
 )
 
+-- Crear referencia de Envio a Cliente
 alter table PERSISTENTES.Envio
 		add constraint FK_EnvioCliente
 		foreign key (envio_cliente) references PERSISTENTES.Cliente
 
+-- Crear referencia de Envio a Ticket
 alter table PERSISTENTES.Envio
 		add constraint FK_EnvioTicket
 		foreign key (envio_ticket) references PERSISTENTES.Ticket
 
+-- Crear referencia de Envio a EnvioEstado
 alter table PERSISTENTES.Envio
 		add constraint FK_EnvioEstado
 		foreign key (envio_estado) references PERSISTENTES.EnvioEstado
 
+-- Crear tabla TipoMedioDePago
 create table PERSISTENTES.TipoMedioDePago
 (
 	tipo_medio_de_pago nvarchar(255) not null
@@ -217,6 +246,7 @@ create table PERSISTENTES.TipoMedioDePago
 		constraint PK_TipoMedioDePago PRIMARY KEY (tipo_medio_de_pago)
 )
 
+-- Crear tabla MedioDePago
 create table PERSISTENTES.MedioDePago
 (
 	medio_de_pago nvarchar(255) not null,
@@ -225,10 +255,12 @@ create table PERSISTENTES.MedioDePago
 		constraint PK_MedioDePago PRIMARY KEY (medio_de_pago)
 )
 
+-- Crear referencia de MedioDePago a TipoMedioDePago
 alter table PERSISTENTES.MedioDePago
 		add constraint FK_MedioDePagoTipo
 		foreign key (medio_de_pago_tipo) references PERSISTENTES.TipoMedioDePago
 
+-- Crear tabla Descuento
 create table PERSISTENTES.Descuento
 (
 	descuento_codigo decimal(18,0) not null,
@@ -241,6 +273,7 @@ create table PERSISTENTES.Descuento
 		constraint PK_Descuento PRIMARY KEY (descuento_codigo)
 )
 
+-- Crear tabla Pago
 create table PERSISTENTES.Pago
 (
 	pago_id int IDENTITY,
@@ -252,15 +285,17 @@ create table PERSISTENTES.Pago
 	constraint PK_Pago PRIMARY KEY (pago_id)
 )
 
+-- Crear referencia de Pago a MedioDePago
 alter table PERSISTENTES.Pago
 		add constraint FK_PagoMedioDePago
 		foreign key (pago_medio_pago) references PERSISTENTES.MedioDePago
 
+-- Crear referencia de Pago a Ticket
 alter table PERSISTENTES.Pago
 		add constraint FK_PagoTicket
 		foreign key (pago_ticket) references PERSISTENTES.Ticket
 
-
+-- Crear tabla DetallePagoTarjeta
 create table PERSISTENTES.DetallePagoTarjeta
 (
 	detalle_pago_tarjeta_nro nvarchar(50),
@@ -272,14 +307,17 @@ create table PERSISTENTES.DetallePagoTarjeta
 	constraint PK_DetallePago PRIMARY KEY (detalle_pago_id)
 )
 
+-- Crear referencia de DetallePagoTarjeta a Cliente
 alter table PERSISTENTES.DetallePagoTarjeta
 		add constraint FK_DetallePagoTarjetaCliente
 		foreign key (detalle_pago_cliente) references PERSISTENTES.Cliente
 
+-- Crear referencia de DetallePagoTarjeta a Pago
 alter table PERSISTENTES.DetallePagoTarjeta
 		add constraint FK_DetallePagoTarjetaPago
 		foreign key (detalle_pago_id) references PERSISTENTES.Pago
 
+-- Crear tabla Categoria
 create table PERSISTENTES.DescuentoAplicado
 (
 	descuento_aplicado_descuento decimal(18,0) not null,
@@ -289,14 +327,17 @@ create table PERSISTENTES.DescuentoAplicado
 		constraint PK_DescuentoAplicado primary key (descuento_aplicado_descuento, descuento_aplicado_pago)
 )
 
+-- Crear referencia de DescuentoAplicado a Descuento
 alter table PERSISTENTES.DescuentoAplicado
 		add constraint FK_DescuentoAplicadoDescuento
 		foreign key (descuento_aplicado_descuento) references PERSISTENTES.Descuento
 
+-- Crear referencia de DescuentoAplicado a Pago
 alter table PERSISTENTES.DescuentoAplicado
 		add constraint FK_DescuentoAplicadoPago
 		foreign key (descuento_aplicado_pago) references PERSISTENTES.Pago
 
+-- Crear tabla Marca
 create table PERSISTENTES.Marca
 (
 	marca_id int IDENTITY,
@@ -305,6 +346,7 @@ create table PERSISTENTES.Marca
 		constraint PK_Marca PRIMARY KEY (marca_id)
 )
 
+-- Crear tabla Categoria
 create table PERSISTENTES.Categoria
 (
 	categoria_id int IDENTITY,
@@ -314,10 +356,12 @@ create table PERSISTENTES.Categoria
 		constraint PK_Categoria PRIMARY KEY (categoria_id)
 )
 
+-- Crear referencia de Categoria a Categoria (subcategorias)
 alter table PERSISTENTES.Categoria
 		add constraint FK_Categoria
 		foreign key (categoria_madre) references PERSISTENTES.Categoria
 
+-- Crear tabla Producto
 create table PERSISTENTES.Producto
 (
 	producto_id int IDENTITY,
@@ -330,16 +374,17 @@ create table PERSISTENTES.Producto
 		constraint PK_Producto PRIMARY KEY (producto_id)
 )
 
-
+-- Crear referencia de Producto a Marca
 alter table PERSISTENTES.Producto
 		add constraint FK_ProductoMarca
 		foreign key (producto_marca_id) references PERSISTENTES.Marca
 
+-- Crear referencia de Producto a Categoria
 alter table PERSISTENTES.Producto
 	add constraint FK_ProductoCategoria
 	foreign key (producto_categoria) references PERSISTENTES.Categoria
 
-
+-- Crear tabla TicketDetalle
 create table PERSISTENTES.TicketDetalle
 (
 	ticket_det_id int IDENTITY,
@@ -352,19 +397,21 @@ create table PERSISTENTES.TicketDetalle
 		constraint PK_TicketDetalle PRIMARY KEY (ticket_det_id)
 )
 
+-- Crear referencia de TicketDetalle a Ticket
 alter table PERSISTENTES.TicketDetalle
 		add constraint FK_ticketDetalleTicket
 		foreign key (ticket_det_ticket) references PERSISTENTES.Ticket
 
+-- Crear referencia de TicketDetalle a Producto
 alter table PERSISTENTES.TicketDetalle
 		add constraint FK_TicketDetalleProducto
 		foreign key (ticket_det_producto) references PERSISTENTES.Producto
 
-
+-- Crear tabla DescuentoAplicado
 create table PERSISTENTES.Promocion
 (
 	promo_codigo decimal(18,0) not null,
---	promo_aplicada_id int,
+	--	promo_aplicada_id int,
 	promocion_descripcion nvarchar(255),
 	promocion_fecha_inicio datetime,
 	promocion_fecha_fin datetime
@@ -372,6 +419,7 @@ create table PERSISTENTES.Promocion
 		constraint PK_Promocion PRIMARY KEY (promo_codigo)
 )
 
+-- Crear tabla PromoAplicada
 create table PERSISTENTES.PromoAplicada
 (
 	promo_aplicada_id int IDENTITY,
@@ -382,17 +430,17 @@ create table PERSISTENTES.PromoAplicada
 		constraint PK_PromoAplicada PRIMARY KEY (promo_aplicada_id)
 )
 
+-- Crear referencia de PromoAplicada a TicketDetalle
 alter table PERSISTENTES.PromoAplicada
 		add constraint FK_PromoAplicadaTicketDet
 		foreign key (promo_aplicada_ticketDet) references PERSISTENTES.TicketDetalle
 
+-- Crear referencia de PromoAplicada a Promocion
 alter table PERSISTENTES.PromoAplicada
 		add constraint FK_PromoAplicadaPromocion
 		foreign key (promo_promocion) references PERSISTENTES.Promocion
 
-
-
-
+-- Crear tabla Regla
 create table PERSISTENTES.Regla
 (
 	regla_id int IDENTITY,
@@ -408,10 +456,12 @@ create table PERSISTENTES.Regla
 		constraint PK_Regla PRIMARY KEY (regla_id)
 )
 
+-- Crear referencia de Regla a Promocion
 alter table PERSISTENTES.Regla
 		add constraint FK_ReglaPromocion
 		foreign key (regla_promocion) references PERSISTENTES.Promocion
 
+-- Crear tabla DescuentoAplicado
 create table PERSISTENTES.PromocionPorProducto
 (
 	promo_codigo decimal(18,0) not null,
@@ -420,30 +470,33 @@ create table PERSISTENTES.PromocionPorProducto
 		constraint PK_PromocionPorProducto PRIMARY KEY (promo_codigo, producto_id)
 )
 
+-- Crear referencia de PromocionPorProducto a Promocion
 alter table PERSISTENTES.PromocionPorProducto
 		add constraint FK_PromocionPorProductoPromo 
 		foreign key (promo_codigo) references PERSISTENTES.Promocion
 
+-- Crear referencia de PromocionPorProducto a Producto
 alter table PERSISTENTES.PromocionPorProducto
 		add constraint FK_PromocionPorProductoProd 
 		foreign key (producto_id) references PERSISTENTES.Producto
 
-CREATE TABLE PERSISTENTES.SubcategoriaCategoria (
-    PRODUCTO_SUB_CATEGORIA NVARCHAR(255),
-    PRODUCTO_CATEGORIA NVARCHAR(255))
-
-
+-- Crear tabla SubcategoriaCategoria
+CREATE TABLE PERSISTENTES.SubcategoriaCategoria
+(
+	PRODUCTO_SUB_CATEGORIA NVARCHAR(255),
+	PRODUCTO_CATEGORIA NVARCHAR(255)
+)
 go
 
 -------MIGRACION DE TABLAS
 CREATE PROCEDURE migrar_datos
 AS
---Provincia
+-- Migrar datos de la tabla Maestra a Provincia
 INSERT INTO PERSISTENTES.Provincia
 	(provincia_nombre)
 select distinct provincia_nombre
 from (
-											SELECT DISTINCT SUPER_PROVINCIA as provincia_nombre
+														SELECT DISTINCT SUPER_PROVINCIA as provincia_nombre
 		FROM [GD1C2024].[gd_esquema].[Maestra]
 		WHERE SUPER_PROVINCIA IS NOT NULL
 	union
@@ -457,12 +510,12 @@ from (
 	) as Provincia
 
 
---Localidad
+-- Migrar datos de la tabla Maestra a Localidad
 INSERT INTO PERSISTENTES.Localidad
 	(localidad_nombre, localidad_provincia)
 SELECT DISTINCT maestra_localidad_nombre, nueva_provincia_id
 FROM (
-											SELECT maestra.SUCURSAL_LOCALIDAD AS maestra_localidad_nombre, nueva_provincia_t.provincia_id nueva_provincia_id
+														SELECT maestra.SUCURSAL_LOCALIDAD AS maestra_localidad_nombre, nueva_provincia_t.provincia_id nueva_provincia_id
 		FROM GD1C2024.gd_esquema.Maestra maestra LEFT JOIN PERSISTENTES.Provincia nueva_provincia_t on nueva_provincia_t.provincia_nombre = maestra.SUCURSAL_PROVINCIA
 		WHERE SUCURSAL_LOCALIDAD IS NOT NULL
 	UNION
@@ -475,47 +528,47 @@ FROM (
 		WHERE CLIENTE_LOCALIDAD IS NOT NULL
 		) AS Localidad;
 
---TipoCaja
+-- Migrar datos de la tabla Maestra a TipoCaja
 INSERT INTO PERSISTENTES.TipoCaja
 	(tipo_caja)
 SELECT DISTINCT CAJA_TIPO
 FROM [GD1C2024].[gd_esquema].[Maestra]
 WHERE CAJA_TIPO IS NOT NULL
 
---EnvioEstado
+-- Migrar datos de la tabla Maestra a TipoMedioDePago
 INSERT INTO PERSISTENTES.EnvioEstado
 	(envio_estado)
 SELECT DISTINCT ENVIO_ESTADO
 FROM GD1C2024.gd_esquema.Maestra
 WHERE ENVIO_ESTADO IS NOT NULL
 
---TipoComprobante
+-- Migra datos de la tabla Maestra a TipoMedioDePago
 INSERT INTO PERSISTENTES.TipoComprobante
 	(tipo_comprobante)
 select distinct TICKET_TIPO_COMPROBANTE
 FROM [GD1C2024].[gd_esquema].[Maestra]
 WHERE TICKET_TIPO_COMPROBANTE IS NOT NULL
 
---CondicionFiscal
+-- Migrar datos de la tabla Maestra a CondicionFiscal
 INSERT INTO PERSISTENTES.CondicionFiscal
 select distinct SUPER_CONDICION_FISCAL
 from [GD1C2024].[gd_esquema].[Maestra]
 WHERE SUPER_CONDICION_FISCAL IS NOT NULL
 
---Marca
+-- Migrar datos de la tabla Maestra a Marca
 INSERT INTO PERSISTENTES.Marca
 select distinct PRODUCTO_MARCA
 from [GD1C2024].[gd_esquema].[Maestra]
 WHERE PRODUCTO_MARCA IS NOT NULL
 
---TipoMedioDePago
+-- Migrar datos de la tabla Maestra a TipoMedioDePago
 INSERT INTO PERSISTENTES.TipoMedioDePago
 	(tipo_medio_de_pago)
 SELECT DISTINCT PAGO_TIPO_MEDIO_PAGO
 FROM GD1C2024.gd_esquema.Maestra
 WHERE PAGO_TIPO_MEDIO_PAGO IS NOT NULL
 
---MedioDePago
+-- Migrar datos de la tabla Maestra a MedioDePago
 INSERT INTO PERSISTENTES.MedioDePago
 	(medio_de_pago, medio_de_pago_tipo)
 SELECT DISTINCT maestra_medio_de_pago, nueva_tipo_medio_de_pago
@@ -524,17 +577,17 @@ FROM (
 	FROM GD1C2024.gd_esquema.Maestra maestra LEFT JOIN PERSISTENTES.TipoMedioDePago nueva_tipo_medio_de_pago_t
 		on nueva_tipo_medio_de_pago_t.tipo_medio_de_pago = maestra.PAGO_TIPO_MEDIO_PAGO
 	WHERE PAGO_MEDIO_PAGO IS NOT NULL 
-        ) AS MedioDePago;
+		) AS MedioDePago;
 
 
---Descuento
+-- Migrar datos de la tabla Maestra a Descuento
 INSERT INTO PERSISTENTES.Descuento
 	(descuento_codigo, descuento_descripcion, descuento_fecha_inicio, descuento_fecha_fin, descuento_porcentaje, descuento_tope)
 select distinct DESCUENTO_CODIGO, DESCUENTO_DESCRIPCION, DESCUENTO_FECHA_FIN, DESCUENTO_FECHA_INICIO, DESCUENTO_PORCENTAJE_DESC, DESCUENTO_TOPE
 from [GD1C2024].[gd_esquema].[Maestra]
 where DESCUENTO_CODIGO is not null
 
---Super
+-- Migrar datos de la tabla Maestra a Super
 INSERT INTO PERSISTENTES.Super
 	(super_nombre, super_razon_soc, super_cuit, super_iibb, super_domicilio, super_fecha_ini_actividad, super_condicion_fiscal_id, super_localidad_id)
 select distinct maestra_super_nombre, maestra_super_razon_soc, maestra_super_cuit, maestra_super_iibb, maestra_super_domicilio, maestra_super_fecha_ini_actividad, nueva_condicion_fiscal, nueva_localidad_id
@@ -553,7 +606,7 @@ from (
 	WHERE SUPER_NOMBRE is not null
 	) AS Super
 
---Sucursal
+-- Migrar datos de la tabla Maestra a Sucursal
 INSERT INTO PERSISTENTES.Sucursal
 	(sucursal_nombre, sucursal_direccion, sucursal_localidad_id, sucursal_super)
 select distinct maestra_sucursal_nombre, maestra_sucursal_direccion, nueva_localidad_id, nueva_super_id
@@ -568,7 +621,7 @@ from (
 	WHERE SUCURSAL_NOMBRE IS NOT NULL
 	) as Sucursal
 
---Caja
+-- Migrar datos de la tabla Maestra a Caja
 INSERT INTO PERSISTENTES.Caja
 	(caja_nro, caja_sucursal, caja_tipo)
 select distinct maestra_caja_nro, nueva_sucursal_id, nueva_caja_tipo_id
@@ -582,7 +635,7 @@ from (
 	where CAJA_NUMERO is not null or CAJA_TIPO is not null
     ) as Caja
 
---Empleado
+--Migrar datos de la tabla Maestra a Empleado
 INSERT INTO PERSISTENTES.Empleado
 	(empleado_nombre, empleado_apellido, empleado_fecha_registro, empleado_telefono, empleado_mail, empleado_fecha_nacimiento, empleado_dni, empleado_sucursal)
 select distinct maestra_empleado_nombre, maestra_empleado_apellido, maestra_empleado_fecha_registro, maestra_empleado_telefono, maestra_empleado_mail, maestra_empleado_fecha_nacimiento,
@@ -601,8 +654,7 @@ from (
 	where EMPLEADO_NOMBRE is not null
 		) as Empleado
 
-
---Ticket
+-- Migrar datos de la tabla Maestra a Ticket
 INSERT INTO PERSISTENTES.Ticket
 	(ticket_numero, ticket_fecha_hora, ticket_subtotal_productos, ticket_total_descuento, ticket_total_descuento_aplicado_mp, ticket_total_envio,
 	ticket_total_ticket, ticket_caja_nro, ticket_caja_sucursal, ticket_empleado, ticket_tipo_comprobante)
@@ -631,7 +683,7 @@ from (
 	where maestra.TICKET_NUMERO is not null and maestra.EMPLEADO_DNI is not null
 	) as Ticket
 
---Pago
+-- Migrar datos de la tabla Maestra a Pago
 INSERT INTO PERSISTENTES.Pago
 	(pago_fecha, pago_importe, pago_medio_pago, pago_ticket)
 SELECT DISTINCT maestra_pago_fecha, maestra_pago_importe, nueva_pago_medio_pago, nueva_pago_ticket
@@ -651,7 +703,7 @@ from (
 	where maestra.PAGO_FECHA is not null and maestra.PAGO_IMPORTE is not null and maestra.PAGO_MEDIO_PAGO is not null and maestra.TICKET_NUMERO is not null
 ) as Pago
 
---DetallePagoTarjeta
+--Migrar datos de la tabla Maestra a DetallePagoTarjeta
 INSERT INTO PERSISTENTES.DetallePagoTarjeta
 	(detalle_pago_id, detalle_pago_tarjeta_cuotas, detalle_pago_tarjeta_nro, detalle_pago_tarjeta_fecha_vencimiento, detalle_pago_cliente)
 SELECT distinct nueva_pago_id, maestra_detalle_pago_tarjeta_cuotas, maestra_detalle_pago_tarjeta_nro, nueva_detalle_pago_tarjeta_fecha_vencimiento, nueva_detalle_pago_cliente
@@ -669,7 +721,7 @@ FROM (
 	WHERE maestra.PAGO_TARJETA_CUOTAS IS NOT NULL AND maestra.PAGO_TARJETA_NRO IS NOT NULL AND maestra.PAGO_TARJETA_FECHA_VENC IS NOT NULL
 	) as DetallePagoTarjeta
 
---Cliente
+-- Migrar datos de la tabla Maestra a Cliente
 INSERT into PERSISTENTES.Cliente
 	(cliente_nombre, cliente_apellido, cliente_dni, cliente_fecha_registro, cliente_telefono, cliente_mail,cliente_fecha_nacimiento, cliente_domicilio, cliente_localidad_id)
 SELECT distinct maestra_cliente_nombre, maestra_cliente_apellido, maestra_cliente_dni, maestra_cliente_fecha_registro, maestra_cliente_telefono, maestra_cliente_mail, maestra_cliente_fecha_nacimiento,
@@ -693,6 +745,7 @@ from (
 	where maestra.CLIENTE_DNI is not null
 	) as Cliente
 
+-- Migrar datos de la tabla Maestra a DescuentoAplicado
 INSERT INTO PERSISTENTES.DescuentoAplicado
 	(
 	descuento_aplicado_descuento,
@@ -714,14 +767,14 @@ from (
 	) as DescuentoAplicado
 
 
---Categoria
+-- Migrar datos de la tabla Maestra a Categoria
 insert into PERSISTENTES.Categoria
 	(categoria_nombre)
 SELECT distinct PRODUCTO_CATEGORIA
 from [GD1C2024].[gd_esquema].[Maestra]
 where PRODUCTO_CATEGORIA is not null
 
-
+-- Migrar datos de la tabla Maestra a SubcategoriaCategoria
 INSERT INTO PERSISTENTES.SubcategoriaCategoria
 	(PRODUCTO_SUB_CATEGORIA, PRODUCTO_CATEGORIA)
 SELECT DISTINCT PRODUCTO_SUB_CATEGORIA, PRODUCTO_CATEGORIA
@@ -740,14 +793,14 @@ from (	select count(*) as cantidad
 			) as otraConsulta
 	)
 
---subcategoria
+-- Migrar datos de la tabla Maestra a Categoria (subcategorias)
 insert into PERSISTENTES.Categoria
 	(categoria_nombre, categoria_madre)
 select distinct PRODUCTO_SUB_CATEGORIA, c.categoria_id
 from PERSISTENTES.SubcategoriaCategoria
 	join PERSISTENTES.Categoria c on c.categoria_nombre = PRODUCTO_CATEGORIA
 
---Producto
+--Migrar datos de la tabla Maestra a Producto
 INSERT INTO PERSISTENTES.Producto
 	(producto_nombre, producto_descripcion, producto_precio, producto_marca_id, producto_categoria)
 select distinct maestra_producto_nombre, maestra_producto_descripcion, maestra_producto_precio, nueva_producto_marca, nueva_producto_categoria
@@ -763,7 +816,7 @@ from (
 	where PRODUCTO_NOMBRE is not null
 	) as Producto
 
---TicketDetalle
+--Migrar datos de la tabla Maestra a TicketDetalle
 INSERT INTO PERSISTENTES.TicketDetalle
 	(ticket_det_ticket, ticket_det_producto, ticket_det_cantidad, ticket_det_total, ticket_det_precio)
 SELECT distinct nueva_ticket_detalle_ticket, nueva_ticket_detalle_producto, maestra_ticket_detalle_cantidad, maestra_ticket_detalle_subtotal, maestra_ticket_detalle_precio_unitario
@@ -789,7 +842,7 @@ from (
 	) as TicketDetalle
 
 
---envio
+--Migrar datos de la tabla Maestra a Envio
 INSERT INTO PERSISTENTES.Envio
 	(envio_costo, envio_fecha_programada, envio_hora_inicio, envio_hora_fin, envio_fecha_entrega, envio_cliente, envio_estado, envio_ticket)
 select distinct maestra_envio_costo, maestra_envio_fecha_programada, maestra_envio_hora_inicio, maestra_envio_hora_fin, maestra_envio_fecha_entrega, nueva_envio_cliente_id,
@@ -814,9 +867,7 @@ from (
 	where maestra.ENVIO_COSTO is not null
 		) as Envio
 
-
-
---Promocion 
+-- Migrar datos de la tabla Maestra a Promocion
 INSERT INTO PERSISTENTES.Promocion
 	(promo_codigo, promocion_descripcion, promocion_fecha_inicio, promocion_fecha_fin)
 SELECT DISTINCT
@@ -828,7 +879,7 @@ FROM [GD1C2024].[gd_esquema].[Maestra] Maestra
 WHERE Maestra.PROMO_CODIGO IS NOT NULL
 
 
---regla
+-- Migrar datos de la tabla Maestra a Regla
 insert into PERSISTENTES.Regla
 	(regla_aplica_misma_marca, regla_aplica_mismo_prod,regla_cant_aplica_descuento,regla_cant_aplicable_regla,regla_cant_max_prod,regla_descripcion,regla_descuento_aplicable_prod,regla_promocion)
 select distinct
@@ -844,7 +895,7 @@ from [GD1C2024].[gd_esquema].[Maestra]
 	join PERSISTENTES.Promocion nueva_regla_promocion on nueva_regla_promocion.promo_codigo = maestra.PROMO_CODIGO
 where maestra.PROMO_CODIGO is not null
 
---PromoAplicada
+-- Migra datos de la tabla Maestra a PromoAplicada
 INSERT INTO PERSISTENTES.PromoAplicada
 	(promo_aplicada_ticketDet, promo_aplicada_descuento,promo_promocion)
 select distinct nuevo_detalle_ticket_promo_aplicada_ticketDet, maestra_promo_aplicada_descuento, nueva_promo_promocion
@@ -875,7 +926,7 @@ from (
 	WHERE Maestra.TICKET_NUMERO IS NOT NULL AND Maestra.TICKET_DET_PRECIO IS NOT NULL AND Maestra.TICKET_DET_TOTAL IS NOT NULL AND Maestra.PROMO_APLICADA_DESCUENTO IS NOT NULL
 	) as PromoAplicada
 
---promocionPorProducto
+-- Migrar datos de la tabla Maestra a PromocionPorProducto
 insert into PERSISTENTES.PromocionPorProducto
 	(promo_codigo,producto_id)
 select distinct nueva_promo_codigo, nueva_producto_id
