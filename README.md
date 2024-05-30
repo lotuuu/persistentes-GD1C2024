@@ -26,5 +26,4 @@
 - [x] TipoMedioDePago
 - [X] DescuentoAplicado
 - [x] Descuento
-- [ ] DetallePagoTarjeta
-- [ ] ProductoPorCategoria (no se necesita por ahora)
+- [X] DetallePagoTarjeta
