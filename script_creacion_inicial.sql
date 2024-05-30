@@ -727,24 +727,6 @@ FROM (
 	WHERE maestra.CLIENTE_DNI IS NOT NULL
 	) AS Cliente
 
---Migrar datos de la tabla Maestra a DetallePagoTarjeta
-INSERT INTO PERSISTENTES.DetallePagoTarjeta
-	(detalle_pago_id, detalle_pago_tarjeta_cuotas, detalle_pago_tarjeta_nro, detalle_pago_tarjeta_fecha_vencimiento, detalle_pago_cliente)
-SELECT DISTINCT nueva_pago_id, maestra_detalle_pago_tarjeta_cuotas, maestra_detalle_pago_tarjeta_nro, nueva_detalle_pago_tarjeta_fecha_vencimiento, nueva_detalle_pago_cliente
-FROM (
-		SELECT nueva_Pago_t.pago_id AS nueva_pago_id,
-		maestra.PAGO_TARJETA_CUOTAS AS maestra_detalle_pago_tarjeta_cuotas,
-		maestra.PAGO_TARJETA_NRO AS maestra_detalle_pago_tarjeta_nro,
-		maestra.PAGO_TARJETA_FECHA_VENC AS nueva_detalle_pago_tarjeta_fecha_vencimiento,
-		nueva_Cliente_t.cliente_id AS nueva_detalle_pago_cliente
-	FROM [GD1C2024].[gd_esquema].[Maestra] maestra
-		LEFT JOIN PERSISTENTES.Pago nueva_Pago_t ON nueva_Pago_t.pago_fecha = maestra.PAGO_FECHA AND nueva_Pago_t.pago_importe = maestra.PAGO_IMPORTE AND nueva_Pago_t.pago_medio_pago = maestra.PAGO_MEDIO_PAGO
-		LEFT JOIN PERSISTENTES.Ticket nueva_Ticket_t ON nueva_Ticket_t.ticket_id = nueva_Pago_t.pago_ticket
-		LEFT JOIN PERSISTENTES.Envio nueva_Envio_t ON nueva_Envio_t.envio_ticket = nueva_Ticket_t.ticket_id
-		LEFT JOIN PERSISTENTES.Cliente nueva_Cliente_t ON nueva_Envio_t.envio_ticket = nueva_Cliente_t.cliente_id
-	WHERE maestra.PAGO_TARJETA_CUOTAS IS NOT NULL AND maestra.PAGO_TARJETA_NRO IS NOT NULL AND maestra.PAGO_TARJETA_FECHA_VENC IS NOT NULL
-	) AS DetallePagoTarjeta
-
 -- Migrar datos de la tabla Maestra a DescuentoAplicado
 INSERT INTO PERSISTENTES.DescuentoAplicado
 	(
@@ -942,7 +924,26 @@ FROM (
 			nueva_producto_t.producto_precio = maestra.PRODUCTO_PRECIO
 	WHERE maestra.PRODUCTO_NOMBRE IS NOT NULL AND maestra.PROMO_CODIGO IS NOT NULL
 	) AS PromocionPorProducto
+
+--Migrar datos de la tabla Maestra a DetallePagoTarjeta
+INSERT INTO PERSISTENTES.DetallePagoTarjeta
+	(detalle_pago_id, detalle_pago_tarjeta_cuotas, detalle_pago_tarjeta_nro, detalle_pago_tarjeta_fecha_vencimiento, detalle_pago_cliente)
+SELECT DISTINCT nueva_pago_id, maestra_detalle_pago_tarjeta_cuotas, maestra_detalle_pago_tarjeta_nro, nueva_detalle_pago_tarjeta_fecha_vencimiento, nueva_detalle_pago_cliente
+FROM (
+		SELECT nueva_Pago_t.pago_id AS nueva_pago_id,
+		maestra.PAGO_TARJETA_CUOTAS AS maestra_detalle_pago_tarjeta_cuotas,
+		maestra.PAGO_TARJETA_NRO AS maestra_detalle_pago_tarjeta_nro,
+		maestra.PAGO_TARJETA_FECHA_VENC AS nueva_detalle_pago_tarjeta_fecha_vencimiento,
+		nueva_Cliente_t.cliente_id AS nueva_detalle_pago_cliente
+	FROM [GD1C2024].[gd_esquema].[Maestra] maestra
+		LEFT JOIN PERSISTENTES.Pago nueva_Pago_t ON nueva_Pago_t.pago_fecha = maestra.PAGO_FECHA AND nueva_Pago_t.pago_importe = maestra.PAGO_IMPORTE AND nueva_Pago_t.pago_medio_pago = maestra.PAGO_MEDIO_PAGO
+		LEFT JOIN PERSISTENTES.Ticket nueva_Ticket_t ON nueva_Ticket_t.ticket_id = nueva_Pago_t.pago_ticket
+		LEFT JOIN PERSISTENTES.Envio nueva_Envio_t ON nueva_Envio_t.envio_ticket = nueva_Ticket_t.ticket_id
+		LEFT JOIN PERSISTENTES.Cliente nueva_Cliente_t ON nueva_Envio_t.envio_ticket = nueva_Cliente_t.cliente_id
+	WHERE maestra.PAGO_TARJETA_CUOTAS IS NOT NULL AND maestra.PAGO_TARJETA_NRO IS NOT NULL AND maestra.PAGO_TARJETA_FECHA_VENC IS NOT NULL
+	) AS DetallePagoTarjeta
 GO
+
 
 
 --------EJECUCION
