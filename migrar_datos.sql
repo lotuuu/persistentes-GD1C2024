@@ -5,7 +5,7 @@ INSERT INTO PERSISTENTES.Provincia
 	(provincia_nombre)
 select distinct provincia_nombre
 from (
-								SELECT DISTINCT SUPER_PROVINCIA as provincia_nombre
+											SELECT DISTINCT SUPER_PROVINCIA as provincia_nombre
 		FROM [GD1C2024].[gd_esquema].[Maestra]
 		WHERE SUPER_PROVINCIA IS NOT NULL
 	union
@@ -24,7 +24,7 @@ INSERT INTO PERSISTENTES.Localidad
 	(localidad_nombre, localidad_provincia)
 SELECT DISTINCT maestra_localidad_nombre, nueva_provincia_id
 FROM (
-								SELECT maestra.SUCURSAL_LOCALIDAD AS maestra_localidad_nombre, nueva_provincia_t.provincia_id nueva_provincia_id
+											SELECT maestra.SUCURSAL_LOCALIDAD AS maestra_localidad_nombre, nueva_provincia_t.provincia_id nueva_provincia_id
 		FROM GD1C2024.gd_esquema.Maestra maestra LEFT JOIN PERSISTENTES.Provincia nueva_provincia_t on nueva_provincia_t.provincia_nombre = maestra.SUCURSAL_PROVINCIA
 		WHERE SUCURSAL_LOCALIDAD IS NOT NULL
 	UNION
@@ -224,18 +224,12 @@ FROM (
 		maestra.PAGO_TARJETA_FECHA_VENC as nueva_detalle_pago_tarjeta_fecha_vencimiento,
 		nueva_Cliente_t.cliente_id as nueva_detalle_pago_cliente
 	FROM [GD1C2024].[gd_esquema].[Maestra] maestra
-		LEFT JOIN PERSISTENTES.Pago nueva_Pago_t on nueva_Pago_t.pago_fecha = maestra.PAGO_FECHA and nueva_Pago_t.pago_importe = maestra.PAGO_IMPORTE and nueva_Pago_t.pago_medio_pago = maestra.PAGO_TIPO_MEDIO_PAGO and nueva_Pago_t.pago_ticket = (
-			select ticket_id
-			from PERSISTENTES.Ticket
-			where ticket_numero = maestra.TICKET_NUMERO and ticket_tipo_comprobante = maestra.TICKET_TIPO_COMPROBANTE and ticket_caja_sucursal = (
-				select sucursal_id
-				from PERSISTENTES.Sucursal
-				where sucursal_nombre = maestra.SUCURSAL_NOMBRE
-			)
-		)
-		LEFT JOIN PERSISTENTES.Cliente nueva_Cliente_t on nueva_Cliente_t.cliente_dni = maestra.CLIENTE_DNI
+		LEFT JOIN PERSISTENTES.Pago nueva_Pago_t on nueva_Pago_t.pago_fecha = maestra.PAGO_FECHA and nueva_Pago_t.pago_importe = maestra.PAGO_IMPORTE and nueva_Pago_t.pago_medio_pago = maestra.PAGO_MEDIO_PAGO
+		LEFT JOIN PERSISTENTES.Ticket nueva_Ticket_t on nueva_Ticket_t.ticket_id = nueva_Pago_t.pago_ticket
+		LEFT JOIN PERSISTENTES.Envio nueva_Envio_t on nueva_Envio_t.envio_ticket = nueva_Ticket_t.ticket_id
+		LEFT JOIN PERSISTENTES.Cliente nueva_Cliente_t on nueva_Envio_t.envio_ticket = nueva_Cliente_t.cliente_id
+	WHERE maestra.PAGO_TARJETA_CUOTAS IS NOT NULL AND maestra.PAGO_TARJETA_NRO IS NOT NULL AND maestra.PAGO_TARJETA_FECHA_VENC IS NOT NULL
 	) as DetallePagoTarjeta
-
 
 --Cliente
 INSERT into PERSISTENTES.Cliente
