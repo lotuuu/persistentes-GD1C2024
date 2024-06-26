@@ -1,45 +1,45 @@
 use GD1C2024
 go
 
-create table PERSISTENTES.DI_tiempo
+create table PERSISTENTES.BI_tiempo
 (
 	tiempo_id int identity,
 	tiempo_anio int,
 	tiempo_cuatrimestre int,
 	tiempo_mes int
 
-	constraint PK_DI_tiempo PRIMARY KEY (tiempo_id)
+	constraint PK_BI_tiempo PRIMARY KEY (tiempo_id)
 )
 
-create table PERSISTENTES.DI_rangoEtario
+create table PERSISTENTES.BI_rangoEtario
 (
 	rangoEtario_id int identity,
 	rangoEtario_descripcion char(60)
-	constraint PK_DI_rangoEtario PRIMARY KEY (rangoEtario_id)
+	constraint PK_BI_rangoEtario PRIMARY KEY (rangoEtario_id)
 )
 
-create table PERSISTENTES.DI_ubicacion
+create table PERSISTENTES.BI_ubicacion
 (
 	ubicacion_id int identity,
 	ubicacion_provincia int,
 	ubicacion_localidad int
 
-	constraint PK_DI_ubicacion PRIMARY KEY (ubicacion_id)
+	constraint PK_BI_ubicacion PRIMARY KEY (ubicacion_id)
 )
 
-create table PERSISTENTES.DI_turno
+create table PERSISTENTES.BI_turno
 (
 	turno_id int identity,
 	turno_descripcion char(60)
 
-	constraint PK_DI_turno PRIMARY KEY (turno_id)
+	constraint PK_BI_turno PRIMARY KEY (turno_id)
 )
 
-create table PERSISTENTES.DI_tipoCaja
+create table PERSISTENTES.BI_tipoCaja
 (
 	tipo_caja nvarchar(255) NOT NULL
 
-	constraint PK_DI_tipoCaja primary key (tipo_caja)
+	constraint PK_BI_tipoCaja primary key (tipo_caja)
 )
 
 create table PERSISTENTES.hechos_ventas
@@ -54,34 +54,34 @@ create table PERSISTENTES.hechos_ventas
 	hechosVenta_cantidad_unidades decimal(18,0),
 	hechosVenta_descuento decimal(18,0)
 
-	constraint PK_DI_hechosVentas primary key (hechosVenta_id)
+	constraint PK_BI_hechosVentas primary key (hechosVenta_id)
 )
 
 ALTER TABLE PERSISTENTES.hechos_ventas
 	add constraint FK_hechosVentas_tiempo
-	foreign key (hechosVenta_tiempo_id) references PERSISTENTES.DI_tiempo
+	foreign key (hechosVenta_tiempo_id) references PERSISTENTES.BI_tiempo
 
 ALTER TABLE PERSISTENTES.hechos_ventas
 	add constraint FK_hechosVentas_ubicacion
-	foreign key (hechosVenta_ubicacion_id) references PERSISTENTES.DI_ubicacion
+	foreign key (hechosVenta_ubicacion_id) references PERSISTENTES.BI_ubicacion
 
 ALTER TABLE PERSISTENTES.hechos_ventas
 	add constraint FK_hechosVentas_turno
-	foreign key (hechosVenta_turno_id) references PERSISTENTES.DI_turno
+	foreign key (hechosVenta_turno_id) references PERSISTENTES.BI_turno
 
 ALTER TABLE PERSISTENTES.hechos_ventas
 	add constraint FK_hechosVentas_tipoCaja
-	foreign key (hechosVenta_tipo_caja) references PERSISTENTES.DI_tipoCaja
+	foreign key (hechosVenta_tipo_caja) references PERSISTENTES.BI_tipoCaja
 
 ALTER TABLE PERSISTENTES.hechos_ventas
 	add constraint FK_hechosVentas_rangoEtario
-	foreign key (hechosVenta_rangoEtario_id) references PERSISTENTES.DI_rangoEtario
+	foreign key (hechosVenta_rangoEtario_id) references PERSISTENTES.BI_rangoEtario
 
 
 --MIGRACION
 
 --tiempo
-insert into PERSISTENTES.DI_tiempo
+insert into PERSISTENTES.BI_tiempo
 	(tiempo_anio,tiempo_cuatrimestre,tiempo_mes)
 select distinct year(ticket_fecha_hora), 
 case	when month(ticket_fecha_hora) = 1 or month(ticket_fecha_hora) = 2 or month(ticket_fecha_hora) = 3 or month(ticket_fecha_hora) = 4
@@ -94,46 +94,46 @@ month(ticket_fecha_hora)
 from PERSISTENTES.Ticket
 
 --Tipo Caja
-insert into PERSISTENTES.DI_tipoCaja (tipo_caja)
+insert into PERSISTENTES.BI_tipoCaja (tipo_caja)
 select distinct tipo_caja from PERSISTENTES.TipoCaja
 
 --Rango Etario
-insert into PERSISTENTES.DI_rangoEtario
+insert into PERSISTENTES.BI_rangoEtario
 	(rangoEtario_descripcion)
 select '<25'
 
-insert into PERSISTENTES.DI_rangoEtario
+insert into PERSISTENTES.BI_rangoEtario
 	(rangoEtario_descripcion)
 select '25-35'
 
-insert into PERSISTENTES.DI_rangoEtario
+insert into PERSISTENTES.BI_rangoEtario
 	(rangoEtario_descripcion)
 select '35-50'
 
-insert into PERSISTENTES.DI_rangoEtario
+insert into PERSISTENTES.BI_rangoEtario
 	(rangoEtario_descripcion)
 select '>50'
 
 --ubicacion
-insert into PERSISTENTES.DI_ubicacion
+insert into PERSISTENTES.BI_ubicacion
 	(ubicacion_localidad,ubicacion_provincia)
 select distinct localidad_id, localidad_provincia from PERSISTENTES.Localidad
 
 --turno
 
-insert into PERSISTENTES.DI_turno
+insert into PERSISTENTES.BI_turno
 	(turno_descripcion)
 select '08:00 - 12:00'
 
-insert into PERSISTENTES.DI_turno
+insert into PERSISTENTES.BI_turno
 	(turno_descripcion)
 select '12:00 - 16:00'
 
-insert into PERSISTENTES.DI_turno
+insert into PERSISTENTES.BI_turno
 	(turno_descripcion)
 select '16:00 - 20:00'
 
-insert into PERSISTENTES.DI_turno
+insert into PERSISTENTES.BI_turno
 	(turno_descripcion)
 select 'otros'
 
@@ -143,8 +143,8 @@ insert into PERSISTENTES.hechos_ventas
 	hechosVenta_cantidad_unidades,hechosVenta_descuento)
 
 select distinct  
-	(select tiempo_id from PERSISTENTES.DI_tiempo where tiempo_anio = year(ticket_fecha_hora) and tiempo_mes = MONTH(ticket_fecha_hora)),
-	(select distinct ubicacion_id from PERSISTENTES.DI_ubicacion where sucursal_localidad_id = ubicacion_localidad),
+	(select tiempo_id from PERSISTENTES.BI_tiempo where tiempo_anio = year(ticket_fecha_hora) and tiempo_mes = MONTH(ticket_fecha_hora)),
+	(select distinct ubicacion_id from PERSISTENTES.BI_ubicacion where sucursal_localidad_id = ubicacion_localidad),
 	(select case	when datepart(hour,ticket_fecha_hora) >= 8 and datepart(hour,ticket_fecha_hora) < 12
 					then 1
 					when datepart(hour,ticket_fecha_hora) >= 12 and datepart(hour,ticket_fecha_hora) < 16
@@ -153,7 +153,7 @@ select distinct
 					then 3
 					else 4
 					end),
-	(select distinct tipo_caja from PERSISTENTES.DI_tipoCaja where tipo_caja = caja_tipo),
+	(select distinct tipo_caja from PERSISTENTES.BI_tipoCaja where tipo_caja = caja_tipo),
 	(select case	when datediff(year,empleado_fecha_nacimiento,GETDATE()) < 25
 					then 1
 					when datediff(year,empleado_fecha_nacimiento,GETDATE()) >= 25 and datediff(year,empleado_fecha_nacimiento,GETDATE()) < 35
@@ -181,8 +181,8 @@ as
 select tiempo_anio,tiempo_mes,ubicacion_localidad, 
 sum(hechosVenta_importe) / (select sum(hechosVenta_importe) from PERSISTENTES.hechos_ventas) as Promedio_de_ventas
 from PERSISTENTES.hechos_ventas
-join PERSISTENTES.DI_tiempo on tiempo_id = hechosVenta_tiempo_id
-join PERSISTENTES.DI_ubicacion on hechosVenta_ubicacion_id = ubicacion_id
+join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
+join PERSISTENTES.BI_ubicacion on hechosVenta_ubicacion_id = ubicacion_id
 group by tiempo_anio,tiempo_mes,ubicacion_localidad
-
+go
 select * from PERSISTENTES.Ticket_Promedio_Mensual
