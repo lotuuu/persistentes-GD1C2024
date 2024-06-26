@@ -14,7 +14,7 @@ create table PERSISTENTES.BI_tiempo
 create table PERSISTENTES.BI_rangoEtario
 (
 	rangoEtario_id int identity,
-	rangoEtario_descripcion char(60)
+	rangoEtario_descripcion nvarchar(60)
 	constraint PK_BI_rangoEtario PRIMARY KEY (rangoEtario_id)
 )
 
@@ -186,3 +186,21 @@ join PERSISTENTES.BI_ubicacion on hechosVenta_ubicacion_id = ubicacion_id
 group by tiempo_anio,tiempo_mes,ubicacion_localidad
 go
 select * from PERSISTENTES.Ticket_Promedio_Mensual
+
+/*2. Cantidad unidades promedio. Cantidad promedio de artículos que se venden
+en función de los tickets según el turno para cada cuatrimestre de cada año. Se
+obtiene sumando la cantidad de artículos de todos los tickets correspondientes
+sobre la cantidad de tickets. Si un producto tiene más de una unidad en un ticket,
+para el indicador se consideran todas las unidades.*/
+go
+create view PERSISTENTES.Cantidad_Unidades_Promedio
+as
+select turno_descripcion, tiempo_cuatrimestre, tiempo_anio, 
+sum(hechosVenta_cantidad_unidades) / (select count(*) from PERSISTENTES.hechos_ventas) as Cantidad_unidades_promedio
+from PERSISTENTES.hechos_ventas
+join PERSISTENTES.BI_turno on turno_id = hechosVenta_turno_id
+join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
+group by turno_descripcion, tiempo_cuatrimestre, tiempo_anio
+go
+select * from PERSISTENTES.Cantidad_Unidades_Promedio
+go
