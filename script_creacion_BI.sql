@@ -22,7 +22,8 @@ create table PERSISTENTES.BI_ubicacion
 (
 	ubicacion_id int identity,
 	ubicacion_provincia int,
-	ubicacion_localidad int
+	ubicacion_localidad int,
+	ubicacion_nombre nvarchar(255)
 
 	constraint PK_BI_ubicacion PRIMARY KEY (ubicacion_id)
 )
@@ -77,6 +78,47 @@ ALTER TABLE PERSISTENTES.hechos_ventas
 	add constraint FK_hechosVentas_rangoEtario
 	foreign key (hechosVenta_rangoEtario_id) references PERSISTENTES.BI_rangoEtario
 
+create table PERSISTENTES.BI_sucursal
+(
+	sucursal_id int identity,
+	sucursal_nombre nvarchar(255),
+	sucursal_ubicacion_id int not null
+
+	constraint PK_BI_sucursal primary key (sucursal_id)
+)
+
+alter table PERSISTENTES.BI_sucursal
+	add constraint FK_BI_sucursal_ubicacion
+	foreign key (sucursal_ubicacion_id) references PERSISTENTES.BI_ubicacion
+
+create table PERSISTENTES.hechos_envios
+(
+	hechosEnvios_id int identity,
+	hechosEnvios_tiempo_id int not null,
+	hechosEnvios_ubicacion_id int not null,
+	hechosEnvios_rangoEtario_id int not null,
+	hechosEnvios_estado bit,
+	hechosEnvios_sucursal_id int not null,
+	hechosEnvios_costo_envio decimal(18,2)
+
+	constraint PK_BI_hechosEnvios primary key (hechosEnvios_id)
+)
+
+alter table PERSISTENTES.hechos_envios
+	add constraint FK_hechosEnvios_tiempo
+	foreign key (hechosEnvios_tiempo_id) references PERSISTENTES.BI_tiempo
+
+alter table PERSISTENTES.hechos_envios
+	add constraint FK_hechosEnvios_ubicacion
+	foreign key (hechosEnvios_ubicacion_id) references PERSISTENTES.BI_ubicacion
+
+alter table PERSISTENTES.hechos_envios
+	add constraint FK_hechosEnvios_rangoEtario
+	foreign key (hechosEnvios_rangoEtario_id) references PERSISTENTES.BI_rangoEtario
+
+alter table PERSISTENTES.hechos_envios
+	add constraint FK_hechosEnvios_sucursal
+	foreign key (hechosEnvios_sucursal_id) references PERSISTENTES.BI_sucursal
 
 --MIGRACION
 
@@ -116,8 +158,8 @@ select '>50'
 
 --ubicacion
 insert into PERSISTENTES.BI_ubicacion
-	(ubicacion_localidad,ubicacion_provincia)
-select distinct localidad_id, localidad_provincia from PERSISTENTES.Localidad
+	(ubicacion_localidad,ubicacion_provincia,ubicacion_nombre)
+select distinct localidad_id, localidad_provincia,localidad_nombre from PERSISTENTES.Localidad
 
 --turno
 
@@ -170,6 +212,39 @@ from PERSISTENTES.Ticket
 join PERSISTENTES.Caja on caja_nro = ticket_caja_nro and caja_sucursal = ticket_caja_sucursal
 join PERSISTENTES.Sucursal on caja_sucursal = sucursal_id
 
+--SUCURSAL
+insert into PERSISTENTES.BI_sucursal
+	(sucursal_nombre, sucursal_ubicacion_id)
+select distinct sucursal_nombre, ubicacion_id
+from PERSISTENTES.Sucursal
+join PERSISTENTES.BI_ubicacion on ubicacion_localidad = sucursal_localidad_id
+
+--hechos envios
+insert into PERSISTENTES.hechos_envios
+	(hechosEnvios_tiempo_id,hechosEnvios_ubicacion_id,hechosEnvios_rangoEtario_id,hechosEnvios_estado,hechosEnvios_sucursal_id,hechosEnvios_costo_envio)
+select 
+	(select tiempo_id from PERSISTENTES.BI_tiempo where tiempo_anio = year(envio_fecha_programada) and tiempo_mes = month(envio_fecha_programada)),
+	(select ubicacion_id from PERSISTENTES.BI_ubicacion where ubicacion_localidad = cliente_localidad_id),
+	(case	when datediff(year,cliente_fecha_nacimiento,GETDATE()) < 25
+					then 1
+					when datediff(year,cliente_fecha_nacimiento,GETDATE()) >= 25 and datediff(year,cliente_fecha_nacimiento,GETDATE()) < 35
+					then 2
+					when datediff(year,cliente_fecha_nacimiento,GETDATE()) >= 35 and datediff(year,cliente_fecha_nacimiento,GETDATE()) < 50
+					then 3
+					else 4
+					end),
+	case	when envio_estado = 'finalizado'
+			then 1
+			else 0
+			end,
+	(select bi.sucursal_id from PERSISTENTES.BI_sucursal bi
+	join PERSISTENTES.Sucursal s on s.sucursal_nombre = bi.sucursal_nombre
+	where s.sucursal_id = ticket_caja_sucursal),
+	envio_costo
+from PERSISTENTES.Envio
+join PERSISTENTES.Cliente on cliente_id = envio_cliente
+join PERSISTENTES.Ticket on ticket_id = envio_ticket
+
 
 go
 /*1. Ticket Promedio mensual. Valor promedio de las ventas (en $) según la
@@ -178,12 +253,12 @@ ventas sobre el total de las mismas.*/
 
 create view PERSISTENTES.Ticket_Promedio_Mensual
 as
-select tiempo_anio,tiempo_mes,ubicacion_localidad, 
+select tiempo_anio,tiempo_mes,ubicacion_nombre, 
 sum(hechosVenta_importe) / (select sum(hechosVenta_importe) from PERSISTENTES.hechos_ventas) as Promedio_de_ventas
 from PERSISTENTES.hechos_ventas
 join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
 join PERSISTENTES.BI_ubicacion on hechosVenta_ubicacion_id = ubicacion_id
-group by tiempo_anio,tiempo_mes,ubicacion_localidad
+group by tiempo_anio,tiempo_mes,ubicacion_nombre
 go
 --select * from PERSISTENTES.Ticket_Promedio_Mensual
 
@@ -220,16 +295,18 @@ join PERSISTENTES.BI_rangoEtario on rangoEtario_id = hechosVenta_rangoEtario_id
 group by tiempo_anio, tiempo_cuatrimestre, rangoEtario_descripcion, tipo_caja
 go
 
+--select * from PERSISTENTES.Porcentaje_Anual_Ventas
+
 /*4. Cantidad de ventas registradas por turno para cada localidad según el mes de
 cada año.*/
 
 create view PERSISTENTES.Cantidad_De_Ventas
 as
-select turno_descripcion, tiempo_mes, ubicacion_localidad, count(hechosVenta_id) cantidad_de_ventas from PERSISTENTES.hechos_ventas
+select turno_descripcion, tiempo_mes, ubicacion_nombre, count(hechosVenta_id) cantidad_de_ventas from PERSISTENTES.hechos_ventas
 join PERSISTENTES.BI_turno on turno_id = hechosVenta_turno_id
 join PERSISTENTES.BI_ubicacion on hechosVenta_ubicacion_id = ubicacion_id
 join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
-group by turno_descripcion, tiempo_mes, ubicacion_localidad
+group by turno_descripcion, tiempo_mes, ubicacion_nombre
 go
 
 --select * from PERSISTENTES.Cantidad_De_Ventas
@@ -250,7 +327,53 @@ go
 /*6. Las tres categorías de productos con mayor descuento aplicado a partir de
 promociones para cada cuatrimestre de cada año.*/
 
+--TODO
+
+/*7. Porcentaje de cumplimiento de envíos en los tiempos programados por
+sucursal por año/mes (desvío)*/
+
+create view PERSISTENTES.Porcentaje_De_Cumplimiento_Envios
+as
+select tiempo_anio, tiempo_mes, sucursal_nombre, 
+	count(hechosEnvios_estado)*100.0 / 
+	(select count(*) from PERSISTENTES.hechos_envios
+	join PERSISTENTES.BI_tiempo on tiempo_id = hechosEnvios_tiempo_id
+	join PERSISTENTES.BI_sucursal on sucursal_id = hechosEnvios_sucursal_id
+	where tiempo_anio = bt.tiempo_anio and tiempo_mes = bt.tiempo_mes and bs.sucursal_nombre = sucursal_nombre
+	) porcentaje_de_cumplimiento 
+from PERSISTENTES.hechos_envios he
+join PERSISTENTES.BI_tiempo bt on tiempo_id = hechosEnvios_tiempo_id
+join PERSISTENTES.BI_sucursal bs on sucursal_id = hechosEnvios_sucursal_id
+where hechosEnvios_estado = 1
+group by tiempo_anio, tiempo_mes, sucursal_nombre
+go
 
 
+--select * from PERSISTENTES.Porcentaje_De_Cumplimiento_Envios
+
+/*8. Cantidad de envíos por rango etario de clientes para cada cuatrimestre de
+cada año.*/
+
+create view PERSISTENTES.Cantidad_De_Envios
+as
+select tiempo_anio, tiempo_cuatrimestre, rangoEtario_descripcion,
+	count(*) cantidad_de_envios
+from PERSISTENTES.hechos_envios
+join PERSISTENTES.BI_rangoEtario on hechosEnvios_rangoEtario_id = rangoEtario_id
+join PERSISTENTES.BI_tiempo on hechosEnvios_tiempo_id = tiempo_id
+group by tiempo_anio,tiempo_cuatrimestre,rangoEtario_descripcion
+go
+--select * from PERSISTENTES.Cantidad_De_Envios
+
+/*9. Las 5 localidades (tomando la localidad del cliente) con mayor costo de envío.*/
+
+create view PERSISTENTES.Localidades_con_mayor_costo_envios
+as
+select top 5 ubicacion_nombre from PERSISTENTES.hechos_envios
+join PERSISTENTES.BI_ubicacion on ubicacion_id = hechosEnvios_ubicacion_id
+group by ubicacion_nombre
+order by sum(hechosEnvios_costo_envio) desc
+
+--select * from PERSISTENTES.Localidades_con_mayor_costo_envios
 
 --select * from gd_esquema.Maestra
