@@ -120,6 +120,44 @@ alter table PERSISTENTES.hechos_envios
 	add constraint FK_hechosEnvios_sucursal
 	foreign key (hechosEnvios_sucursal_id) references PERSISTENTES.BI_sucursal
 
+create table PERSISTENTES.BI_medioDePago
+(
+	medio_de_pago nvarchar(255) not null,
+	tipo_medio_de_pago nvarchar(255)
+
+	constraint PK_BI_medioDePago primary key (medio_de_pago)
+)
+
+create table PERSISTENTES.hechos_pagos
+(
+	hechosPagos_id int identity,
+	hechosPagos_tiempo_id int not null,
+	hechosPagos_rangoEtario_id int not null,
+	hechosPagos_sucursal_id int not null,
+	hechosPagos_importe decimal(18,2),
+	hechosPagos_enCuotas bit,
+	hechosPagos_cantidad_descontada decimal(18,2),
+	hechosPagos_medioDePago nvarchar(255) not null
+
+	constraint PK_BI_hechosPagos primary key (hechosPagos_id)
+)
+
+alter table PERSISTENTES.hechos_pagos
+	add constraint FK_hechosPagos_tiempo
+	foreign key (hechosPagos_tiempo_id) references PERSISTENTES.BI_tiempo
+
+alter table PERSISTENTES.hechos_pagos
+	add constraint FK_hechosPagos_rangoEtario
+	foreign key (hechosPagos_rangoEtario_id) references PERSISTENTES.BI_rangoEtario
+
+alter table PERSISTENTES.hechos_pagos
+	add constraint FK_hechosPagos_sucursal
+	foreign key (hechosPagos_sucursal_id) references PERSISTENTES.BI_sucursal
+
+alter table PERSISTENTES.hechos_pagos
+	add constraint FK_hechosPagos_medioDePago
+	foreign key (hechosPagos_medioDePago) references PERSISTENTES.BI_medioDePago
+
 --MIGRACION
 
 --tiempo
@@ -155,6 +193,10 @@ select '35-50'
 insert into PERSISTENTES.BI_rangoEtario
 	(rangoEtario_descripcion)
 select '>50'
+
+insert into PERSISTENTES.BI_rangoEtario
+	(rangoEtario_descripcion)
+select 'no se sabe'
 
 --ubicacion
 insert into PERSISTENTES.BI_ubicacion
@@ -244,6 +286,48 @@ select
 from PERSISTENTES.Envio
 join PERSISTENTES.Cliente on cliente_id = envio_cliente
 join PERSISTENTES.Ticket on ticket_id = envio_ticket
+
+--medioDePago
+insert into PERSISTENTES.BI_medioDePago
+	(medio_de_pago,tipo_medio_de_pago)
+select medio_de_pago, medio_de_pago_tipo from PERSISTENTES.MedioDePago
+
+--hechos_Pagos
+insert into PERSISTENTES.hechos_pagos
+	(hechosPagos_tiempo_id,hechosPagos_rangoEtario_id,hechosPagos_sucursal_id,hechosPagos_importe,hechosPagos_enCuotas,hechosPagos_cantidad_descontada,hechosPagos_medioDePago)
+select  
+	(select tiempo_id from PERSISTENTES.BI_tiempo where tiempo_anio = year(pago_fecha) and MONTH(pago_fecha) = tiempo_mes),
+	case	when cliente_id is NULL
+			then 5
+			when datediff(year,cliente_fecha_nacimiento,GETDATE()) < 25
+			then 1
+			when datediff(year,cliente_fecha_nacimiento,GETDATE()) >= 25 and datediff(year,cliente_fecha_nacimiento,GETDATE()) < 35
+			then 2
+			when datediff(year,cliente_fecha_nacimiento,GETDATE()) >= 35 and datediff(year,cliente_fecha_nacimiento,GETDATE()) < 50
+			then 3
+			else 4
+			end,
+	(select bi.sucursal_id from PERSISTENTES.BI_sucursal bi
+	join PERSISTENTES.Sucursal s on s.sucursal_nombre = bi.sucursal_nombre
+	where s.sucursal_id = ticket_caja_sucursal),
+	pago_importe,
+	(select	case	when detalle_pago_id = pago_id
+					then 1
+					when detalle_pago_tarjeta_cuotas is null
+					then 0
+					end
+	from PERSISTENTES.DetallePagoTarjeta
+	right join PERSISTENTES.Pago on pago_id = detalle_pago_id
+	where p.pago_id = pago_id),
+	descuento_aplicado_cant,
+	p.pago_medio_pago
+from PERSISTENTES.Pago p
+join PERSISTENTES.Ticket on ticket_id = pago_ticket
+left join PERSISTENTES.Envio on envio_ticket = ticket_id
+left join PERSISTENTES.Cliente on cliente_id = envio_cliente
+join PERSISTENTES.DescuentoAplicado on descuento_aplicado_pago = pago_id
+join PERSISTENTES.BI_medioDePago mp on mp.medio_de_pago = p.pago_medio_pago
+--join PERSISTENTES.Cliente on cliente_id = 
 
 
 go
@@ -373,7 +457,33 @@ select top 5 ubicacion_nombre from PERSISTENTES.hechos_envios
 join PERSISTENTES.BI_ubicacion on ubicacion_id = hechosEnvios_ubicacion_id
 group by ubicacion_nombre
 order by sum(hechosEnvios_costo_envio) desc
-
+go
 --select * from PERSISTENTES.Localidades_con_mayor_costo_envios
 
+/*10. Las 3 sucursales con el mayor importe de pagos en cuotas, según el medio de
+pago, mes y año. Se calcula sumando los importes totales de todas las ventas en
+cuotas.*/
+
+create view PERSISTENTES.Sucursales_con_mayor_importe
+as
+select top 3 sucursal_nombre,tiempo_anio,tiempo_mes,hechosPagos_medioDePago
+from PERSISTENTES.hechos_pagos
+join PERSISTENTES.BI_sucursal on sucursal_id = hechosPagos_sucursal_id
+join PERSISTENTES.BI_tiempo on tiempo_id = hechosPagos_tiempo_id
+join PERSISTENTES.BI_medioDePago on medio_de_pago = hechosPagos_medioDePago
+where hechosPagos_enCuotas = 1
+group by sucursal_nombre,tiempo_anio,hechosPagos_medioDePago,tiempo_mes
+order by sum(hechosPagos_importe) desc
+go
+
+--select * from PERSISTENTES.Sucursales_con_mayor_importe
+
+/*11. Promedio de importe de la cuota en función del rango etareo del cliente.*/
+
+--select * from PERSISTENTES.hechos_pagos
+
+
+--select * from PERSISTENTES.DetallePagoTarjeta
 --select * from gd_esquema.Maestra
+
+--sucursal_nombre,tiempo_anio,tiempo_mes, sum(hechosPagos_importe)

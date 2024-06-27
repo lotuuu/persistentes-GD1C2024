@@ -1,4 +1,5 @@
 use GD1C2024
+DROP VIEW PERSISTENTES.Sucursales_con_mayor_importe
 DROP VIEW PERSISTENTES.Localidades_con_mayor_costo_envios
 DROP VIEW PERSISTENTES.Cantidad_De_Envios
 DROP VIEW PERSISTENTES.Porcentaje_De_Cumplimiento_Envios
@@ -7,6 +8,8 @@ DROP VIEW PERSISTENTES.Cantidad_De_Ventas
 DROP VIEW PERSISTENTES.Porcentaje_Anual_Ventas
 DROP VIEW PERSISTENTES.Cantidad_Unidades_Promedio
 DROP VIEW PERSISTENTES.Ticket_Promedio_Mensual
+DROP TABLE PERSISTENTES.hechos_pagos
+DROP TABLE PERSISTENTES.BI_medioDePago
 DROP TABLE PERSISTENTES.hechos_envios
 DROP TABLE PERSISTENTES.BI_sucursal
 DROP TABLE PERSISTENTES.hechos_ventas
