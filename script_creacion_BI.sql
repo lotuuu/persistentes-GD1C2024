@@ -185,7 +185,7 @@ join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
 join PERSISTENTES.BI_ubicacion on hechosVenta_ubicacion_id = ubicacion_id
 group by tiempo_anio,tiempo_mes,ubicacion_localidad
 go
-select * from PERSISTENTES.Ticket_Promedio_Mensual
+--select * from PERSISTENTES.Ticket_Promedio_Mensual
 
 /*2. Cantidad unidades promedio. Cantidad promedio de artículos que se venden
 en función de los tickets según el turno para cada cuatrimestre de cada año. Se
@@ -202,5 +202,55 @@ join PERSISTENTES.BI_turno on turno_id = hechosVenta_turno_id
 join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
 group by turno_descripcion, tiempo_cuatrimestre, tiempo_anio
 go
-select * from PERSISTENTES.Cantidad_Unidades_Promedio
+--select * from PERSISTENTES.Cantidad_Unidades_Promedio
 go
+
+/*3. Porcentaje anual de ventas registradas por rango etario del empleado según el
+tipo de caja para cada cuatrimestre. Se calcula tomando la cantidad de ventas
+correspondientes sobre el total de ventas anual.*/
+
+create view PERSISTENTES.Porcentaje_Anual_Ventas
+as
+select tiempo_anio, tiempo_cuatrimestre, rangoEtario_descripcion,tipo_caja,
+count(hechosVenta_id)*100.0 / (select count(hechosVenta_id) from PERSISTENTES.hechos_ventas) porcentaje_de_ventas
+from PERSISTENTES.hechos_ventas
+join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
+join PERSISTENTES.BI_tipoCaja on tipo_caja = hechosVenta_tipo_caja
+join PERSISTENTES.BI_rangoEtario on rangoEtario_id = hechosVenta_rangoEtario_id
+group by tiempo_anio, tiempo_cuatrimestre, rangoEtario_descripcion, tipo_caja
+go
+
+/*4. Cantidad de ventas registradas por turno para cada localidad según el mes de
+cada año.*/
+
+create view PERSISTENTES.Cantidad_De_Ventas
+as
+select turno_descripcion, tiempo_mes, ubicacion_localidad, count(hechosVenta_id) cantidad_de_ventas from PERSISTENTES.hechos_ventas
+join PERSISTENTES.BI_turno on turno_id = hechosVenta_turno_id
+join PERSISTENTES.BI_ubicacion on hechosVenta_ubicacion_id = ubicacion_id
+join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
+group by turno_descripcion, tiempo_mes, ubicacion_localidad
+go
+
+--select * from PERSISTENTES.Cantidad_De_Ventas
+
+/*5. Porcentaje de descuento aplicados en función del total de los tickets según el
+mes de cada año.*/
+
+create view PERSISTENTES.Porcentaje_Descuento_Aplicado
+as
+select tiempo_anio, tiempo_mes, sum(hechosVenta_descuento)*100.0 / (select sum(hechosVenta_descuento) from PERSISTENTES.hechos_ventas) Porcentaje_De_Descuento_Aplicado
+from PERSISTENTES.hechos_ventas
+join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
+group by tiempo_anio, tiempo_mes
+go
+
+--select * from PERSISTENTES.Porcentaje_Descuento_Aplicado
+
+/*6. Las tres categorías de productos con mayor descuento aplicado a partir de
+promociones para cada cuatrimestre de cada año.*/
+
+
+
+
+--select * from gd_esquema.Maestra
