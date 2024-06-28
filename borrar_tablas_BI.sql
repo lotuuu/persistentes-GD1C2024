@@ -1,4 +1,6 @@
 use GD1C2024
+DROP VIEW PERSISTENTES.Porcentaje_Descuento_Aplicado_Pagos
+DROP VIEW PERSISTENTES.Promedio_Importe_Cuota
 DROP VIEW PERSISTENTES.Sucursales_con_mayor_importe
 DROP VIEW PERSISTENTES.Localidades_con_mayor_costo_envios
 DROP VIEW PERSISTENTES.Cantidad_De_Envios

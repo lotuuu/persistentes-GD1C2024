@@ -135,7 +135,8 @@ create table PERSISTENTES.hechos_pagos
 	hechosPagos_rangoEtario_id int not null,
 	hechosPagos_sucursal_id int not null,
 	hechosPagos_importe decimal(18,2),
-	hechosPagos_enCuotas bit,
+	hechosPagos_cantidad_cuotas decimal(18,0),
+--	hechosPagos_enCuotas bit,
 	hechosPagos_cantidad_descontada decimal(18,2),
 	hechosPagos_medioDePago nvarchar(255) not null
 
@@ -294,7 +295,7 @@ select medio_de_pago, medio_de_pago_tipo from PERSISTENTES.MedioDePago
 
 --hechos_Pagos
 insert into PERSISTENTES.hechos_pagos
-	(hechosPagos_tiempo_id,hechosPagos_rangoEtario_id,hechosPagos_sucursal_id,hechosPagos_importe,hechosPagos_enCuotas,hechosPagos_cantidad_descontada,hechosPagos_medioDePago)
+	(hechosPagos_tiempo_id,hechosPagos_rangoEtario_id,hechosPagos_sucursal_id,hechosPagos_importe,hechosPagos_cantidad_cuotas,hechosPagos_cantidad_descontada,hechosPagos_medioDePago)
 select  
 	(select tiempo_id from PERSISTENTES.BI_tiempo where tiempo_anio = year(pago_fecha) and MONTH(pago_fecha) = tiempo_mes),
 	case	when cliente_id is NULL
@@ -311,10 +312,9 @@ select
 	join PERSISTENTES.Sucursal s on s.sucursal_nombre = bi.sucursal_nombre
 	where s.sucursal_id = ticket_caja_sucursal),
 	pago_importe,
-	(select	case	when detalle_pago_id = pago_id
-					then 1
-					when detalle_pago_tarjeta_cuotas is null
+	(select	case	when detalle_pago_tarjeta_cuotas is null
 					then 0
+					else detalle_pago_tarjeta_cuotas
 					end
 	from PERSISTENTES.DetallePagoTarjeta
 	right join PERSISTENTES.Pago on pago_id = detalle_pago_id
@@ -471,7 +471,7 @@ from PERSISTENTES.hechos_pagos
 join PERSISTENTES.BI_sucursal on sucursal_id = hechosPagos_sucursal_id
 join PERSISTENTES.BI_tiempo on tiempo_id = hechosPagos_tiempo_id
 join PERSISTENTES.BI_medioDePago on medio_de_pago = hechosPagos_medioDePago
-where hechosPagos_enCuotas = 1
+where hechosPagos_cantidad_cuotas != 0
 group by sucursal_nombre,tiempo_anio,hechosPagos_medioDePago,tiempo_mes
 order by sum(hechosPagos_importe) desc
 go
@@ -480,10 +480,31 @@ go
 
 /*11. Promedio de importe de la cuota en función del rango etareo del cliente.*/
 
---select * from PERSISTENTES.hechos_pagos
+create view PERSISTENTES.Promedio_Importe_Cuota
+as
+select rangoEtario_descripcion, sum(hechosPagos_importe/hechosPagos_cantidad_cuotas)/count(hechosPagos_importe) as Promedio_De_Importe_De_La_Cuota
+from PERSISTENTES.hechos_pagos
+join PERSISTENTES.BI_rangoEtario on hechosPagos_rangoEtario_id = rangoEtario_id
+where hechosPagos_cantidad_cuotas != 0
+group by rangoEtario_descripcion
+go
 
+--select * from PERSISTENTES.Promedio_Importe_Cuota
 
---select * from PERSISTENTES.DetallePagoTarjeta
---select * from gd_esquema.Maestra
+/*12. Porcentaje de descuento aplicado por cada medio de pago en función del valor
+de total de pagos sin el descuento, por cuatrimestre. Es decir, total de descuentos
+sobre el total de pagos más el total de descuentos.*/
 
---sucursal_nombre,tiempo_anio,tiempo_mes, sum(hechosPagos_importe)
+create view PERSISTENTES.Porcentaje_Descuento_Aplicado_Pagos
+as
+select medio_de_pago, tiempo_cuatrimestre,  
+	sum(hechosPagos_cantidad_descontada)*100.0/ sum(hechosPagos_cantidad_descontada+hechosPagos_importe) porcentaje_descuento_aplicado
+
+--	(select sum(hechosPagos_cantidad_descontada) from PERSISTENTES.hechos_pagos) 
+from PERSISTENTES.hechos_pagos
+join PERSISTENTES.BI_medioDePago on medio_de_pago = hechosPagos_medioDePago
+join PERSISTENTES.BI_tiempo on tiempo_id = hechosPagos_tiempo_id
+group by medio_de_pago, tiempo_cuatrimestre
+go
+
+--select * from PERSISTENTES.Porcentaje_Descuento_Aplicado_Pagos
