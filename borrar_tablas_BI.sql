@@ -1,4 +1,5 @@
 use GD1C2024
+DROP VIEW PERSISTENTES.Categorias_Con_Mayor_Descuento_Aplicado
 DROP VIEW PERSISTENTES.Porcentaje_Descuento_Aplicado_Pagos
 DROP VIEW PERSISTENTES.Promedio_Importe_Cuota
 DROP VIEW PERSISTENTES.Sucursales_con_mayor_importe
@@ -10,6 +11,8 @@ DROP VIEW PERSISTENTES.Cantidad_De_Ventas
 DROP VIEW PERSISTENTES.Porcentaje_Anual_Ventas
 DROP VIEW PERSISTENTES.Cantidad_Unidades_Promedio
 DROP VIEW PERSISTENTES.Ticket_Promedio_Mensual
+DROP TABLE PERSISTENTES.BI_hechos_promocion
+DROP TABLE PERSISTENTES.BI_categoria
 DROP TABLE PERSISTENTES.BI_hechos_pagos
 DROP TABLE PERSISTENTES.BI_medioDePago
 DROP TABLE PERSISTENTES.BI_hechos_envios

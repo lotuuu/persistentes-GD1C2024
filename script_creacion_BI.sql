@@ -159,6 +159,39 @@ alter table PERSISTENTES.BI_hechos_pagos
 	add constraint FK_hechosPagos_medioDePago
 	foreign key (hechosPagos_medioDePago) references PERSISTENTES.BI_medioDePago
 
+create table PERSISTENTES.BI_categoria
+(
+	categoria_id INT IDENTITY,
+	categoria_nombre nvarchar(255),
+	categoria_madre INT NULL
+
+	CONSTRAINT PK_BI_Categoria PRIMARY KEY (categoria_id)
+)
+
+ALTER TABLE PERSISTENTES.BI_categoria
+	ADD CONSTRAINT FK_BI_categoria
+	FOREIGN KEY (categoria_madre) REFERENCES PERSISTENTES.BI_categoria
+
+create table PERSISTENTES.BI_hechos_promocion
+(
+	hechosPromocion_id int identity,
+	hechosPromocion_tiempo_id int not null,
+	hechosPromocion_descuentoPromoAplicada decimal(18,2),
+	hechosPromocion_categoria_id int not null
+
+	constraint PK_BI_hechosPromocion primary key (hechosPromocion_id)
+)
+
+alter table PERSISTENTES.BI_hechos_promocion
+	add constraint FK_BI_hechosPromocion_tiempo
+	foreign key (hechosPromocion_tiempo_id) references PERSISTENTES.BI_tiempo
+
+alter table PERSISTENTES.BI_hechos_promocion
+	add constraint FK_BI_hechosPromocion_categoria
+	foreign key (hechosPromocion_categoria_id) references PERSISTENTES.BI_categoria
+
+
+
 --MIGRACION
 
 --tiempo
@@ -227,7 +260,7 @@ insert into PERSISTENTES.BI_hechos_ventas
 	(hechosVenta_tiempo_id,hechosVenta_ubicacion_id,hechosVenta_turno_id,hechosVenta_tipo_caja,hechosVenta_rangoEtario_id,hechosVenta_importe,
 	hechosVenta_cantidad_unidades,hechosVenta_descuento)
 
-select distinct  
+select --distinct  
 	(select tiempo_id from PERSISTENTES.BI_tiempo where tiempo_anio = year(ticket_fecha_hora) and tiempo_mes = MONTH(ticket_fecha_hora)),
 	(select distinct ubicacion_id from PERSISTENTES.BI_ubicacion where sucursal_localidad_id = ubicacion_localidad),
 	(select case	when datepart(hour,ticket_fecha_hora) >= 8 and datepart(hour,ticket_fecha_hora) < 12
@@ -329,6 +362,24 @@ join PERSISTENTES.DescuentoAplicado on descuento_aplicado_pago = pago_id
 join PERSISTENTES.BI_medioDePago mp on mp.medio_de_pago = p.pago_medio_pago
 --join PERSISTENTES.Cliente on cliente_id = 
 
+--categoria
+insert into PERSISTENTES.BI_categoria
+	(categoria_nombre,categoria_madre)
+select categoria_nombre, categoria_madre from PERSISTENTES.Categoria
+
+--hechos_promocion
+insert into PERSISTENTES.BI_hechos_promocion
+	(hechosPromocion_tiempo_id,hechosPromocion_descuentoPromoAplicada,hechosPromocion_categoria_id)
+select (select tiempo_id from PERSISTENTES.BI_tiempo where tiempo_anio = year(ticket_fecha_hora) and tiempo_mes = MONTH(ticket_fecha_hora)),
+promo_aplicada_descuento,
+(select categoria_id from PERSISTENTES.BI_categoria where mad.categoria_nombre = categoria_nombre)
+from PERSISTENTES.Ticket
+join PERSISTENTES.TicketDetalle on ticket_det_ticket = ticket_id
+join PERSISTENTES.Producto on producto_id = ticket_det_producto
+join PERSISTENTES.Categoria sub on categoria_id = producto_categoria
+join PERSISTENTES.Categoria mad on sub.categoria_madre = mad.categoria_id
+left join PERSISTENTES.PromoAplicada on ticket_det_id = promo_aplicada_ticketDet
+
 
 go
 /*1. Ticket Promedio mensual. Valor promedio de las ventas (en $) seg�n la
@@ -411,7 +462,15 @@ go
 /*6. Las tres categor�as de productos con mayor descuento aplicado a partir de
 promociones para cada cuatrimestre de cada a�o.*/
 
---TODO
+create view PERSISTENTES.Categorias_Con_Mayor_Descuento_Aplicado
+as
+select top 3 tiempo_anio,tiempo_cuatrimestre, categoria_nombre from PERSISTENTES.BI_hechos_promocion
+join PERSISTENTES.BI_tiempo on tiempo_id = hechosPromocion_tiempo_id
+join PERSISTENTES.BI_categoria on categoria_id = hechosPromocion_categoria_id
+group by tiempo_anio,tiempo_cuatrimestre, categoria_nombre
+order by sum(hechosPromocion_descuentoPromoAplicada) desc
+go
+--select * from PERSISTENTES.Categorias_Con_Mayor_Descuento_Aplicado
 
 /*7. Porcentaje de cumplimiento de env�os en los tiempos programados por
 sucursal por a�o/mes (desv�o)*/
