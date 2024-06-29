@@ -382,8 +382,8 @@ left join PERSISTENTES.PromoAplicada on ticket_det_id = promo_aplicada_ticketDet
 
 
 go
-/*1. Ticket Promedio mensual. Valor promedio de las ventas (en $) seg�n la
-localidad, a�o y mes. Se calcula en funci�n de la sumatoria del importe de las
+/*1. Ticket Promedio mensual. Valor promedio de las ventas (en $) según la
+localidad, año y mes. Se calcula en función de la sumatoria del importe de las
 ventas sobre el total de las mismas.*/
 
 create view PERSISTENTES.Ticket_Promedio_Mensual
@@ -397,10 +397,10 @@ group by tiempo_anio,tiempo_mes,ubicacion_nombre
 go
 --select * from PERSISTENTES.Ticket_Promedio_Mensual
 
-/*2. Cantidad unidades promedio. Cantidad promedio de art�culos que se venden
-en funci�n de los tickets seg�n el turno para cada cuatrimestre de cada a�o. Se
-obtiene sumando la cantidad de art�culos de todos los tickets correspondientes
-sobre la cantidad de tickets. Si un producto tiene m�s de una unidad en un ticket,
+/*2. Cantidad unidades promedio. Cantidad promedio de artículos que se venden
+en función de los tickets según el turno para cada cuatrimestre de cada año. Se
+obtiene sumando la cantidad de artículos de todos los tickets correspondientes
+sobre la cantidad de tickets. Si un producto tiene más de una unidad en un ticket,
 para el indicador se consideran todas las unidades.*/
 go
 create view PERSISTENTES.Cantidad_Unidades_Promedio
@@ -415,7 +415,7 @@ go
 --select * from PERSISTENTES.Cantidad_Unidades_Promedio
 go
 
-/*3. Porcentaje anual de ventas registradas por rango etario del empleado seg�n el
+/*3. Porcentaje anual de ventas registradas por rango etario del empleado según el
 tipo de caja para cada cuatrimestre. Se calcula tomando la cantidad de ventas
 correspondientes sobre el total de ventas anual.*/
 
@@ -432,8 +432,8 @@ go
 
 --select * from PERSISTENTES.Porcentaje_Anual_Ventas
 
-/*4. Cantidad de ventas registradas por turno para cada localidad seg�n el mes de
-cada a�o.*/
+/*4. Cantidad de ventas registradas por turno para cada localidad según el mes de
+cada año.*/
 
 create view PERSISTENTES.Cantidad_De_Ventas
 as
@@ -446,8 +446,8 @@ go
 
 --select * from PERSISTENTES.Cantidad_De_Ventas
 
-/*5. Porcentaje de descuento aplicados en funci�n del total de los tickets seg�n el
-mes de cada a�o.*/
+/*5. Porcentaje de descuento aplicados en función del total de los tickets según el
+mes de cada año.*/
 
 create view PERSISTENTES.Porcentaje_Descuento_Aplicado
 as
@@ -459,8 +459,8 @@ go
 
 --select * from PERSISTENTES.Porcentaje_Descuento_Aplicado
 
-/*6. Las tres categor�as de productos con mayor descuento aplicado a partir de
-promociones para cada cuatrimestre de cada a�o.*/
+/*6. Las tres categorías de productos con mayor descuento aplicado a partir de
+promociones para cada cuatrimestre de cada año.*/
 
 create view PERSISTENTES.Categorias_Con_Mayor_Descuento_Aplicado
 as
@@ -472,8 +472,8 @@ order by sum(hechosPromocion_descuentoPromoAplicada) desc
 go
 --select * from PERSISTENTES.Categorias_Con_Mayor_Descuento_Aplicado
 
-/*7. Porcentaje de cumplimiento de env�os en los tiempos programados por
-sucursal por a�o/mes (desv�o)*/
+/*7. Porcentaje de cumplimiento de envíos en los tiempos programados por
+sucursal por año/mes (desvío)*/
 
 create view PERSISTENTES.Porcentaje_De_Cumplimiento_Envios
 as
@@ -494,8 +494,8 @@ go
 
 --select * from PERSISTENTES.Porcentaje_De_Cumplimiento_Envios
 
-/*8. Cantidad de env�os por rango etario de clientes para cada cuatrimestre de
-cada a�o.*/
+/*8. Cantidad de envíos por rango etario de clientes para cada cuatrimestre de
+cada año.*/
 
 create view PERSISTENTES.Cantidad_De_Envios
 as
@@ -508,7 +508,7 @@ group by tiempo_anio,tiempo_cuatrimestre,rangoEtario_descripcion
 go
 --select * from PERSISTENTES.Cantidad_De_Envios
 
-/*9. Las 5 localidades (tomando la localidad del cliente) con mayor costo de env�o.*/
+/*9. Las 5 localidades (tomando la localidad del cliente) con mayor costo de envío.*/
 
 create view PERSISTENTES.Localidades_con_mayor_costo_envios
 as
@@ -519,8 +519,8 @@ order by sum(hechosEnvios_costo_envio) desc
 go
 --select * from PERSISTENTES.Localidades_con_mayor_costo_envios
 
-/*10. Las 3 sucursales con el mayor importe de pagos en cuotas, seg�n el medio de
-pago, mes y a�o. Se calcula sumando los importes totales de todas las ventas en
+/*10. Las 3 sucursales con el mayor importe de pagos en cuotas, según el medio de
+pago, mes y año. Se calcula sumando los importes totales de todas las ventas en
 cuotas.*/
 
 create view PERSISTENTES.Sucursales_con_mayor_importe
@@ -537,7 +537,7 @@ go
 
 --select * from PERSISTENTES.Sucursales_con_mayor_importe
 
-/*11. Promedio de importe de la cuota en funci�n del rango etareo del cliente.*/
+/*11. Promedio de importe de la cuota en función del rango etareo del cliente.*/
 
 create view PERSISTENTES.Promedio_Importe_Cuota
 as
@@ -550,9 +550,9 @@ go
 
 --select * from PERSISTENTES.Promedio_Importe_Cuota
 
-/*12. Porcentaje de descuento aplicado por cada medio de pago en funci�n del valor
+/*12. Porcentaje de descuento aplicado por cada medio de pago en función del valor
 de total de pagos sin el descuento, por cuatrimestre. Es decir, total de descuentos
-sobre el total de pagos m�s el total de descuentos.*/
+sobre el total de pagos más el total de descuentos.*/
 
 create view PERSISTENTES.Porcentaje_Descuento_Aplicado_Pagos
 as
