@@ -464,11 +464,15 @@ promociones para cada cuatrimestre de cada año.*/
 
 create view PERSISTENTES.Categorias_Con_Mayor_Descuento_Aplicado
 as
-select top 3 tiempo_anio,tiempo_cuatrimestre, categoria_nombre from PERSISTENTES.BI_hechos_promocion
-join PERSISTENTES.BI_tiempo on tiempo_id = hechosPromocion_tiempo_id
+select tiempo_anio,tiempo_cuatrimestre, categoria_nombre from PERSISTENTES.BI_hechos_promocion
+join PERSISTENTES.BI_tiempo bt on tiempo_id = hechosPromocion_tiempo_id
 join PERSISTENTES.BI_categoria on categoria_id = hechosPromocion_categoria_id
+where categoria_id in (select top 3 hechosPromocion_categoria_id from PERSISTENTES.BI_hechos_promocion
+						join PERSISTENTES.BI_tiempo on tiempo_id = hechosPromocion_tiempo_id
+						where bt.tiempo_anio = tiempo_anio and bt.tiempo_cuatrimestre = tiempo_cuatrimestre
+						group by tiempo_anio,tiempo_cuatrimestre, hechosPromocion_categoria_id
+						order by sum(hechosPromocion_descuentoPromoAplicada) desc)
 group by tiempo_anio,tiempo_cuatrimestre, categoria_nombre
-order by sum(hechosPromocion_descuentoPromoAplicada) desc
 go
 --select * from PERSISTENTES.Categorias_Con_Mayor_Descuento_Aplicado
 
