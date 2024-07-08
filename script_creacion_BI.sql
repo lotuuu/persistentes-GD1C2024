@@ -53,7 +53,8 @@ create table PERSISTENTES.BI_hechos_ventas
 	hechosVenta_rangoEtario_id int not null,
 	hechosVenta_importe decimal(18,2),
 	hechosVenta_cantidad_unidades decimal(18,0),
-	hechosVenta_descuento decimal(18,0)
+	hechosVenta_descuento decimal(18,0),
+	hechosVenta_cantidad_tickets int
 
 	constraint PK_BI_hechosVentas primary key (hechosVenta_id)
 )
@@ -254,39 +255,97 @@ select '16:00 - 20:00'
 insert into PERSISTENTES.BI_turno
 	(turno_descripcion)
 select 'otros'
+go
+
+CREATE FUNCTION PERSISTENTES.rangoEtario(@fecha_nacimiento datetime)
+RETURNS INT
+AS
+BEGIN
+DECLARE @rangoEtario INT
+SET @rangoEtario = 
+case	when datediff(year,@fecha_nacimiento,GETDATE()) < 25
+then 1
+when datediff(year,@fecha_nacimiento,GETDATE()) >= 25 and datediff(year,@fecha_nacimiento,GETDATE()) < 35
+then 2
+when datediff(year,@fecha_nacimiento,GETDATE()) >= 35 and datediff(year,@fecha_nacimiento,GETDATE()) < 50
+then 3
+else 4
+end
+RETURN @rangoEtario
+END
+go
+
+CREATE FUNCTION PERSISTENTES.turno(@fecha datetime)
+RETURNS INT
+AS
+BEGIN
+DECLARE @turno INT
+SET @turno = 
+case when datepart(hour,@fecha) >= 8 and datepart(hour,@fecha) < 12
+then 1
+when datepart(hour,@fecha) >= 12 and datepart(hour,@fecha) < 16
+then 2
+when datepart(hour,@fecha) >= 16 and datepart(hour,@fecha) < 20
+then 3
+else 4
+end
+RETURN @turno
+END
+go
 
 --BI_hechos_ventas
-insert into PERSISTENTES.BI_hechos_ventas
-	(hechosVenta_tiempo_id,hechosVenta_ubicacion_id,hechosVenta_turno_id,hechosVenta_tipo_caja,hechosVenta_rangoEtario_id,hechosVenta_importe,
-	hechosVenta_cantidad_unidades,hechosVenta_descuento)
+insert into PERSISTENTES.BI_hechos_ventas (
+hechosVenta_tiempo_id,
+hechosVenta_ubicacion_id,
+hechosVenta_turno_id,
+hechosVenta_tipo_caja,
+hechosVenta_rangoEtario_id,
+hechosVenta_importe,
+hechosVenta_cantidad_unidades,
+hechosVenta_descuento,
+hechosVenta_cantidad_tickets)
+select 
+tiempo_id,
+ubicacion_id,
+PERSISTENTES.turno(ticket_fecha_hora),
+caja_tipo,
+PERSISTENTES.rangoEtario(empleado_fecha_nacimiento),
+SUM(ticket_total_ticket),
+(select sum(ticket_det_cantidad) from PERSISTENTES.TicketDetalle where ticket_det_ticket IN (
+	SELECT
+	ticket_id
+	FROM
+	PERSISTENTES.Ticket
+	JOIN PERSISTENTES.BI_tiempo on tiempo_anio = year(ticket_fecha_hora) and tiempo_mes = MONTH(ticket_fecha_hora)
+	join PERSISTENTES.Caja on caja_nro = ticket_caja_nro and caja_sucursal = ticket_caja_sucursal
+	join PERSISTENTES.Sucursal on caja_sucursal = sucursal_id
+	JOIN PERSISTENTES.BI_tipoCaja on tipo_caja = caja_tipo
+	JOIN PERSISTENTES.BI_ubicacion on ubicacion_localidad = sucursal_localidad_id
+	JOIN PERSISTENTES.Empleado on legajo_empleado = ticket_empleado
+	WHERE
+	tiempo_id = bt.tiempo_id AND
+	ubicacion_id = bu.ubicacion_id AND
+	tipo_caja = c.caja_tipo AND
+	PERSISTENTES.rangoEtario(empleado_fecha_nacimiento) = PERSISTENTES.rangoEtario(e.empleado_fecha_nacimiento) AND
+	PERSISTENTES.turno(ticket_fecha_hora) = PERSISTENTES.turno(t.ticket_fecha_hora)
+	)
+),
+SUM(ticket_total_descuento),
+count(ticket_id)
+from PERSISTENTES.Ticket t
+JOIN PERSISTENTES.Empleado e on e.legajo_empleado = ticket_empleado
+join PERSISTENTES.Caja c on caja_nro = ticket_caja_nro and caja_sucursal = ticket_caja_sucursal
+join PERSISTENTES.Sucursal s on caja_sucursal = sucursal_id
+JOIN PERSISTENTES.BI_tiempo bt on tiempo_anio = year(ticket_fecha_hora) and tiempo_mes = MONTH(ticket_fecha_hora)
+JOIN PERSISTENTES.BI_ubicacion bu on bu.ubicacion_localidad = s.sucursal_localidad_id
+JOIN PERSISTENTES.BI_tipoCaja btc on btc.tipo_caja = caja_tipo
+GROUP BY
+tiempo_id,
+ubicacion_id,
+PERSISTENTES.turno(ticket_fecha_hora),
+caja_tipo,
+PERSISTENTES.rangoEtario(empleado_fecha_nacimiento)
 
-select --distinct  
-	(select tiempo_id from PERSISTENTES.BI_tiempo where tiempo_anio = year(ticket_fecha_hora) and tiempo_mes = MONTH(ticket_fecha_hora)),
-	(select distinct ubicacion_id from PERSISTENTES.BI_ubicacion where sucursal_localidad_id = ubicacion_localidad),
-	(select case	when datepart(hour,ticket_fecha_hora) >= 8 and datepart(hour,ticket_fecha_hora) < 12
-					then 1
-					when datepart(hour,ticket_fecha_hora) >= 12 and datepart(hour,ticket_fecha_hora) < 16
-					then 2
-					when datepart(hour,ticket_fecha_hora) >= 16 and datepart(hour,ticket_fecha_hora) < 20
-					then 3
-					else 4
-					end),
-	(select distinct tipo_caja from PERSISTENTES.BI_tipoCaja where tipo_caja = caja_tipo),
-	(select case	when datediff(year,empleado_fecha_nacimiento,GETDATE()) < 25
-					then 1
-					when datediff(year,empleado_fecha_nacimiento,GETDATE()) >= 25 and datediff(year,empleado_fecha_nacimiento,GETDATE()) < 35
-					then 2
-					when datediff(year,empleado_fecha_nacimiento,GETDATE()) >= 35 and datediff(year,empleado_fecha_nacimiento,GETDATE()) < 50
-					then 3
-					else 4
-					end
-					from PERSISTENTES.Empleado where legajo_empleado = ticket_empleado),
-	ticket_total_ticket,
-	(select sum(ticket_det_cantidad) from PERSISTENTES.TicketDetalle where ticket_det_ticket = ticket_id),
-	ticket_total_descuento
-from PERSISTENTES.Ticket
-join PERSISTENTES.Caja on caja_nro = ticket_caja_nro and caja_sucursal = ticket_caja_sucursal
-join PERSISTENTES.Sucursal on caja_sucursal = sucursal_id
 
 --SUCURSAL
 insert into PERSISTENTES.BI_sucursal
@@ -406,7 +465,7 @@ go
 create view PERSISTENTES.Cantidad_Unidades_Promedio
 as
 select turno_descripcion, tiempo_cuatrimestre, tiempo_anio, 
-sum(hechosVenta_cantidad_unidades) / (select count(*) from PERSISTENTES.BI_hechos_ventas) as Cantidad_unidades_promedio
+sum(hechosVenta_cantidad_unidades) / (select sum(hechosVenta_cantidad_tickets) from PERSISTENTES.BI_hechos_ventas) as Cantidad_unidades_promedio
 from PERSISTENTES.BI_hechos_ventas
 join PERSISTENTES.BI_turno on turno_id = hechosVenta_turno_id
 join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
@@ -422,7 +481,7 @@ correspondientes sobre el total de ventas anual.*/
 create view PERSISTENTES.Porcentaje_Anual_Ventas
 as
 select tiempo_anio, tiempo_cuatrimestre, rangoEtario_descripcion,tipo_caja,
-count(hechosVenta_id)*100.0 / (select count(hechosVenta_id) from PERSISTENTES.BI_hechos_ventas) porcentaje_de_ventas
+sum(hechosVenta_cantidad_tickets)*100.0 / (select sum(hechosVenta_cantidad_tickets) from PERSISTENTES.BI_hechos_ventas) porcentaje_de_ventas
 from PERSISTENTES.BI_hechos_ventas
 join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
 join PERSISTENTES.BI_tipoCaja on tipo_caja = hechosVenta_tipo_caja
@@ -437,7 +496,7 @@ cada año.*/
 
 create view PERSISTENTES.Cantidad_De_Ventas
 as
-select turno_descripcion, tiempo_mes, ubicacion_nombre, count(hechosVenta_id) cantidad_de_ventas from PERSISTENTES.BI_hechos_ventas
+select turno_descripcion, tiempo_mes, ubicacion_nombre, sum(hechosVenta_cantidad_tickets) cantidad_de_ventas from PERSISTENTES.BI_hechos_ventas
 join PERSISTENTES.BI_turno on turno_id = hechosVenta_turno_id
 join PERSISTENTES.BI_ubicacion on hechosVenta_ubicacion_id = ubicacion_id
 join PERSISTENTES.BI_tiempo on tiempo_id = hechosVenta_tiempo_id
