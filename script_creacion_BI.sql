@@ -628,12 +628,61 @@ go
 
 create view PERSISTENTES.Promedio_Importe_Cuota
 as
-select rangoEtario_descripcion, sum(hechosPagos_importe/hechosPagos_cantidad_cuotas)/count(hechosPagos_importe) as Promedio_De_Importe_De_La_Cuota
+select rangoEtario_descripcion, PERSISTENTES.preciosPorCuotaPromedio(rangoEtario_descripcion) as Promedio_De_Importe_De_La_Cuota
 from PERSISTENTES.BI_hechos_pagos
 join PERSISTENTES.BI_rangoEtario on hechosPagos_rangoEtario_id = rangoEtario_id
 where hechosPagos_cantidad_cuotas != 0
 group by rangoEtario_descripcion
 go
+
+CREATE FUNCTION PERSISTENTES.preciosPorCuotaPromedio(@rangoEtarioDescripcion nvarchar(60))
+RETURNS DECIMAL(18,2)
+AS
+BEGIN
+	DECLARE @precioTotal DECIMAL(18,2)
+	DECLARE @contador INT
+
+	-- cursor para recorrer todos los pagos
+	DECLARE @pago_id INT
+	DECLARE @importe DECIMAL(18,2)
+	DECLARE @cuotas INT
+	DECLARE @descuento DECIMAL(18,2)
+	DECLARE @medioDePago NVARCHAR(255)
+
+	DECLARE @precioPorCuota DECIMAL(18,2)
+
+	DECLARE cur CURSOR FOR
+		SELECT
+			hechosPagos_id,
+			hechosPagos_importe,
+			hechosPagos_cantidad_cuotas,
+			hechosPagos_cantidad_descontada,
+			hechosPagos_medioDePago
+		FROM
+			PERSISTENTES.BI_hechos_pagos
+		JOIN PERSISTENTES.BI_rangoEtario ON rangoEtario_id = hechosPagos_rangoEtario_id
+		WHERE
+			rangoEtario_descripcion = @rangoEtarioDescripcion
+
+	SET @precioTotal = 0
+
+	OPEN cur
+	FETCH NEXT FROM cur INTO @pago_id, @importe, @cuotas, @descuento, @medioDePago
+	WHILE @@FETCH_STATUS = 0
+		BEGIN
+			SET @precioPorCuota = @importe / @cuotas
+			SET @precioTotal = @precioTotal + @precioPorCuota
+
+			SET @contador = @contador + 1
+
+			FETCH NEXT FROM cur INTO @pago_id, @importe, @cuotas, @descuento, @medioDePago
+		END
+	
+	CLOSE cur
+	DEALLOCATE cur
+
+	RETURN @precioTotal / @contador
+END
 
 --select * from PERSISTENTES.Promedio_Importe_Cuota
 
