@@ -385,56 +385,7 @@ insert into PERSISTENTES.BI_medioDePago
 	(medio_de_pago,tipo_medio_de_pago)
 select medio_de_pago, medio_de_pago_tipo from PERSISTENTES.MedioDePago
 
---BI_hechos_Pagos
-insert into
-	PERSISTENTES.BI_hechos_pagos (
-		hechosPagos_tiempo_id,
-		hechosPagos_rangoEtario_id,
-		hechosPagos_sucursal_id,
-		hechosPagos_importe,
-		hechosPagos_cantidad_cuotas,
-		hechosPagos_cantidad_descontada,
-		hechosPagos_medioDePago
-	)
-select
-	(
-		select
-			tiempo_id
-		from
-			PERSISTENTES.BI_tiempo
-		where
-			tiempo_anio = year (pago_fecha)
-			and MONTH (pago_fecha) = tiempo_mes
-	),
-	-- puede que aca falte handlear que si cliente_id = null entonces es 5
-	PERSISTENTES.rangoEtario(cliente_fecha_nacimiento),
-	(
-		select
-			bi.sucursal_id
-		from
-			PERSISTENTES.BI_sucursal bi
-			join PERSISTENTES.Sucursal s on s.sucursal_nombre = bi.sucursal_nombre
-		where
-			s.sucursal_id = ticket_caja_sucursal
-	),
-	SUM(pago_importe),
-	PERSISTENTES.cantidad_cuotas(pago_id),
-	SUM(descuento_aplicado_cant),
-	p.pago_medio_pago
-from
-	PERSISTENTES.Pago p
-	join PERSISTENTES.Ticket on ticket_id = pago_ticket
-	left join PERSISTENTES.Envio on envio_ticket = ticket_id
-	left join PERSISTENTES.Cliente on cliente_id = envio_cliente
-	join PERSISTENTES.DescuentoAplicado on descuento_aplicado_pago = pago_id
-	join PERSISTENTES.BI_medioDePago mp on mp.medio_de_pago = p.pago_medio_pago
-GROUP BY
-	1,	--tiempo_id
-	2,	--rangoEtario
-	3,	--sucursal_id
-	5,	--cantidad_cuotas
-	7	--medio_de_pago
-
+go
 CREATE FUNCTION PERSISTENTES.cantidad_cuotas(@pago_id int)
 RETURNS INT
 AS
@@ -449,12 +400,50 @@ SET @cantidad_cuotas =
 			end
 		from
 			PERSISTENTES.DetallePagoTarjeta
-			right join PERSISTENTES.Pago on pago_id = detalle_pago_id
+			right join PERSISTENTES.Pago p on p.pago_id = detalle_pago_id
 		where
 			p.pago_id = pago_id
 	)
 RETURN @cantidad_cuotas
 END
+go
+
+--BI_hechos_Pagos
+insert into
+	PERSISTENTES.BI_hechos_pagos (
+		hechosPagos_tiempo_id,
+		hechosPagos_rangoEtario_id,
+		hechosPagos_sucursal_id,
+		hechosPagos_importe,
+		hechosPagos_cantidad_cuotas,
+		hechosPagos_cantidad_descontada,
+		hechosPagos_medioDePago
+	)
+select
+	tiempo_id,
+	-- puede que aca falte handlear que si cliente_id = null entonces es 5
+	PERSISTENTES.rangoEtario(cliente_fecha_nacimiento),
+	sucursal_id,
+	SUM(pago_importe),
+	PERSISTENTES.cantidad_cuotas(pago_id),
+	SUM(descuento_aplicado_cant),
+	p.pago_medio_pago
+from
+	PERSISTENTES.Pago p
+	join PERSISTENTES.Ticket on ticket_id = pago_ticket
+	left join PERSISTENTES.Envio on envio_ticket = ticket_id
+	left join PERSISTENTES.Cliente on cliente_id = envio_cliente
+	join PERSISTENTES.DescuentoAplicado on descuento_aplicado_pago = pago_id
+	join PERSISTENTES.BI_medioDePago mp on mp.medio_de_pago = p.pago_medio_pago
+	join PERSISTENTES.BI_tiempo	on tiempo_anio = year (pago_fecha) and MONTH (pago_fecha) = tiempo_mes
+	join PERSISTENTES.BI_sucursal on sucursal_id = ticket_caja_sucursal
+GROUP BY
+	tiempo_id,	--tiempo_id
+	PERSISTENTES.rangoEtario(cliente_fecha_nacimiento),	--rangoEtario
+	sucursal_id,	--sucursal_id
+	PERSISTENTES.cantidad_cuotas(pago_id),	--cantidad_cuotas
+	p.pago_medio_pago	--medio_de_pago
+
 
 --categoria
 insert into PERSISTENTES.BI_categoria
