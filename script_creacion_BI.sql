@@ -659,7 +659,8 @@ BEGIN
 			PERSISTENTES.BI_hechos_pagos
 		JOIN PERSISTENTES.BI_rangoEtario ON rangoEtario_id = hechosPagos_rangoEtario_id
 		WHERE
-			rangoEtario_descripcion = @rangoEtarioDescripcion
+			rangoEtario_descripcion = @rangoEtarioDescripcion AND
+			hechosPagos_cantidad_cuotas != 0
 
 	SET @precioTotal = 0
 
