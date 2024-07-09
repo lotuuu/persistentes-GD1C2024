@@ -382,16 +382,7 @@ select
 		where
 			ubicacion_localidad = cliente_localidad_id
 	),
-	(
-		case
-			when datediff (year, cliente_fecha_nacimiento, GETDATE ()) < 25 then 1
-			when datediff (year, cliente_fecha_nacimiento, GETDATE ()) >= 25
-			and datediff (year, cliente_fecha_nacimiento, GETDATE ()) < 35 then 2
-			when datediff (year, cliente_fecha_nacimiento, GETDATE ()) >= 35
-			and datediff (year, cliente_fecha_nacimiento, GETDATE ()) < 50 then 3
-			else 4
-		end
-	),
+	PERSISTENTES.rangoEtario(cliente_fecha_nacimiento),
 	case
 		when envio_estado = 'finalizado' then 1
 		else 0
@@ -405,11 +396,17 @@ select
 		where
 			s.sucursal_id = ticket_caja_sucursal
 	),
-	envio_costo
+	SUM(envio_costo)
 from
 	PERSISTENTES.Envio
 	join PERSISTENTES.Cliente on cliente_id = envio_cliente
 	join PERSISTENTES.Ticket on ticket_id = envio_ticket
+GROUP BY
+	1,
+	2,
+	3,
+	4,
+	5
 
 --medioDePago
 insert into PERSISTENTES.BI_medioDePago
