@@ -653,11 +653,8 @@ BEGIN
 
 	DECLARE cur CURSOR FOR
 		SELECT
-			hechosPagos_id,
 			hechosPagos_importe,
 			hechosPagos_cantidad_cuotas,
-			hechosPagos_cantidad_descontada,
-			hechosPagos_medioDePago
 		FROM
 			PERSISTENTES.BI_hechos_pagos
 		JOIN PERSISTENTES.BI_rangoEtario ON rangoEtario_id = hechosPagos_rangoEtario_id
@@ -667,7 +664,7 @@ BEGIN
 	SET @precioTotal = 0
 
 	OPEN cur
-	FETCH NEXT FROM cur INTO @pago_id, @importe, @cuotas, @descuento, @medioDePago
+	FETCH NEXT FROM cur INTO @importe, @cuotas
 	WHILE @@FETCH_STATUS = 0
 		BEGIN
 			SET @precioPorCuota = @importe / @cuotas
@@ -675,7 +672,7 @@ BEGIN
 
 			SET @contador = @contador + 1
 
-			FETCH NEXT FROM cur INTO @pago_id, @importe, @cuotas, @descuento, @medioDePago
+			FETCH NEXT FROM cur INTO @importe, @cuotas
 		END
 	
 	CLOSE cur
