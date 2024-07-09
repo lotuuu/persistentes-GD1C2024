@@ -355,30 +355,61 @@ from PERSISTENTES.Sucursal
 join PERSISTENTES.BI_ubicacion on ubicacion_localidad = sucursal_localidad_id
 
 --hechos envios
-insert into PERSISTENTES.BI_hechos_envios
-	(hechosEnvios_tiempo_id,hechosEnvios_ubicacion_id,hechosEnvios_rangoEtario_id,hechosEnvios_estado,hechosEnvios_sucursal_id,hechosEnvios_costo_envio)
-select 
-	(select tiempo_id from PERSISTENTES.BI_tiempo where tiempo_anio = year(envio_fecha_programada) and tiempo_mes = month(envio_fecha_programada)),
-	(select ubicacion_id from PERSISTENTES.BI_ubicacion where ubicacion_localidad = cliente_localidad_id),
-	(case	when datediff(year,cliente_fecha_nacimiento,GETDATE()) < 25
-					then 1
-					when datediff(year,cliente_fecha_nacimiento,GETDATE()) >= 25 and datediff(year,cliente_fecha_nacimiento,GETDATE()) < 35
-					then 2
-					when datediff(year,cliente_fecha_nacimiento,GETDATE()) >= 35 and datediff(year,cliente_fecha_nacimiento,GETDATE()) < 50
-					then 3
-					else 4
-					end),
-	case	when envio_estado = 'finalizado'
-			then 1
-			else 0
-			end,
-	(select bi.sucursal_id from PERSISTENTES.BI_sucursal bi
-	join PERSISTENTES.Sucursal s on s.sucursal_nombre = bi.sucursal_nombre
-	where s.sucursal_id = ticket_caja_sucursal),
+insert into
+	PERSISTENTES.BI_hechos_envios (
+		hechosEnvios_tiempo_id,
+		hechosEnvios_ubicacion_id,
+		hechosEnvios_rangoEtario_id,
+		hechosEnvios_estado,
+		hechosEnvios_sucursal_id,
+		hechosEnvios_costo_envio
+	)
+select
+	(
+		select
+			tiempo_id
+		from
+			PERSISTENTES.BI_tiempo
+		where
+			tiempo_anio = year (envio_fecha_programada)
+			and tiempo_mes = month (envio_fecha_programada)
+	),
+	(
+		select
+			ubicacion_id
+		from
+			PERSISTENTES.BI_ubicacion
+		where
+			ubicacion_localidad = cliente_localidad_id
+	),
+	(
+		case
+			when datediff (year, cliente_fecha_nacimiento, GETDATE ()) < 25 then 1
+			when datediff (year, cliente_fecha_nacimiento, GETDATE ()) >= 25
+			and datediff (year, cliente_fecha_nacimiento, GETDATE ()) < 35 then 2
+			when datediff (year, cliente_fecha_nacimiento, GETDATE ()) >= 35
+			and datediff (year, cliente_fecha_nacimiento, GETDATE ()) < 50 then 3
+			else 4
+		end
+	),
+	case
+		when envio_estado = 'finalizado' then 1
+		else 0
+	end,
+	(
+		select
+			bi.sucursal_id
+		from
+			PERSISTENTES.BI_sucursal bi
+			join PERSISTENTES.Sucursal s on s.sucursal_nombre = bi.sucursal_nombre
+		where
+			s.sucursal_id = ticket_caja_sucursal
+	),
 	envio_costo
-from PERSISTENTES.Envio
-join PERSISTENTES.Cliente on cliente_id = envio_cliente
-join PERSISTENTES.Ticket on ticket_id = envio_ticket
+from
+	PERSISTENTES.Envio
+	join PERSISTENTES.Cliente on cliente_id = envio_cliente
+	join PERSISTENTES.Ticket on ticket_id = envio_ticket
 
 --medioDePago
 insert into PERSISTENTES.BI_medioDePago
