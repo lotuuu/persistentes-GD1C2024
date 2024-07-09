@@ -81,7 +81,7 @@ ALTER TABLE PERSISTENTES.BI_hechos_ventas
 
 create table PERSISTENTES.BI_sucursal
 (
-	sucursal_id int identity,
+	sucursal_id int not null,
 	sucursal_nombre nvarchar(255),
 	sucursal_ubicacion_id int not null
 
@@ -98,9 +98,10 @@ create table PERSISTENTES.BI_hechos_envios
 	hechosEnvios_tiempo_id int not null,
 	hechosEnvios_ubicacion_id int not null,
 	hechosEnvios_rangoEtario_id int not null,
-	hechosEnvios_estado bit,
+	hechosEnvios_cantidad_finalizados int,
 	hechosEnvios_sucursal_id int not null,
-	hechosEnvios_costo_envio decimal(18,2)
+	hechosEnvios_costo_envio decimal(18,2),
+	hechosEnvios_cantidad_envios int
 
 	constraint PK_BI_hechosEnvios primary key (hechosEnvios_id)
 )
@@ -349,8 +350,8 @@ PERSISTENTES.rangoEtario(empleado_fecha_nacimiento)
 
 --SUCURSAL
 insert into PERSISTENTES.BI_sucursal
-	(sucursal_nombre, sucursal_ubicacion_id)
-select distinct sucursal_nombre, ubicacion_id
+	(sucursal_id, sucursal_nombre,sucursal_ubicacion_id)
+select distinct sucursal_id, sucursal_nombre, ubicacion_id
 from PERSISTENTES.Sucursal
 join PERSISTENTES.BI_ubicacion on ubicacion_localidad = sucursal_localidad_id
 
@@ -360,53 +361,34 @@ insert into
 		hechosEnvios_tiempo_id,
 		hechosEnvios_ubicacion_id,
 		hechosEnvios_rangoEtario_id,
-		hechosEnvios_estado,
+		hechosEnvios_cantidad_finalizados,
 		hechosEnvios_sucursal_id,
-		hechosEnvios_costo_envio
+		hechosEnvios_costo_envio,
+		hechosEnvios_cantidad_envios
 	)
 select
-	(
-		select
-			tiempo_id
-		from
-			PERSISTENTES.BI_tiempo
-		where
-			tiempo_anio = year (envio_fecha_programada)
-			and tiempo_mes = month (envio_fecha_programada)
-	),
-	(
-		select
-			ubicacion_id
-		from
-			PERSISTENTES.BI_ubicacion
-		where
-			ubicacion_localidad = cliente_localidad_id
-	),
+	tiempo_id,
+	ubicacion_id,
 	PERSISTENTES.rangoEtario(cliente_fecha_nacimiento),
-	case
+	sum(case
 		when envio_estado = 'finalizado' then 1
 		else 0
-	end,
-	(
-		select
-			bi.sucursal_id
-		from
-			PERSISTENTES.BI_sucursal bi
-			join PERSISTENTES.Sucursal s on s.sucursal_nombre = bi.sucursal_nombre
-		where
-			s.sucursal_id = ticket_caja_sucursal
-	),
-	SUM(envio_costo)
+	end),
+	sucursal_id,
+	SUM(envio_costo),
+	count(envio_id)
 from
 	PERSISTENTES.Envio
 	join PERSISTENTES.Cliente on cliente_id = envio_cliente
 	join PERSISTENTES.Ticket on ticket_id = envio_ticket
+	join PERSISTENTES.BI_tiempo on tiempo_anio = year (envio_fecha_programada) and tiempo_mes = month (envio_fecha_programada)
+	join PERSISTENTES.BI_ubicacion on ubicacion_localidad = cliente_localidad_id
+	join PERSISTENTES.BI_sucursal on sucursal_id = ticket_caja_sucursal
 GROUP BY
-	1,
-	2,
-	3,
-	4,
-	5
+	tiempo_id,
+	ubicacion_id,
+	PERSISTENTES.rangoEtario(cliente_fecha_nacimiento),
+	sucursal_id
 
 --medioDePago
 insert into PERSISTENTES.BI_medioDePago
@@ -569,16 +551,10 @@ sucursal por año/mes (desvío)*/
 create view PERSISTENTES.Porcentaje_De_Cumplimiento_Envios
 as
 select tiempo_anio, tiempo_mes, sucursal_nombre, 
-	count(hechosEnvios_estado)*100.0 / 
-	(select count(*) from PERSISTENTES.BI_hechos_envios
-	join PERSISTENTES.BI_tiempo on tiempo_id = hechosEnvios_tiempo_id
-	join PERSISTENTES.BI_sucursal on sucursal_id = hechosEnvios_sucursal_id
-	where tiempo_anio = bt.tiempo_anio and tiempo_mes = bt.tiempo_mes and bs.sucursal_nombre = sucursal_nombre
-	) porcentaje_de_cumplimiento 
+	(sum(hechosEnvios_cantidad_finalizados)*100.0 / sum(hechosEnvios_cantidad_envios)) porcentaje_de_cumplimiento 
 from PERSISTENTES.BI_hechos_envios he
 join PERSISTENTES.BI_tiempo bt on tiempo_id = hechosEnvios_tiempo_id
 join PERSISTENTES.BI_sucursal bs on sucursal_id = hechosEnvios_sucursal_id
-where hechosEnvios_estado = 1
 group by tiempo_anio, tiempo_mes, sucursal_nombre
 go
 
@@ -591,7 +567,7 @@ cada año.*/
 create view PERSISTENTES.Cantidad_De_Envios
 as
 select tiempo_anio, tiempo_cuatrimestre, rangoEtario_descripcion,
-	count(*) cantidad_de_envios
+	sum(hechosEnvios_cantidad_envios) cantidad_de_envios
 from PERSISTENTES.BI_hechos_envios
 join PERSISTENTES.BI_rangoEtario on hechosEnvios_rangoEtario_id = rangoEtario_id
 join PERSISTENTES.BI_tiempo on hechosEnvios_tiempo_id = tiempo_id
