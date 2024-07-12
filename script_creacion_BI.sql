@@ -436,7 +436,7 @@ insert into
 select
 	tiempo_id,
 	SUM(promo_aplicada_descuento),
-	categoria_id
+	mad.categoria_id
 from
 	PERSISTENTES.Ticket
 	join PERSISTENTES.TicketDetalle on ticket_det_ticket = ticket_id
