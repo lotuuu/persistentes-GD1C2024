@@ -427,18 +427,27 @@ insert into PERSISTENTES.BI_categoria
 select categoria_nombre, categoria_madre from PERSISTENTES.Categoria
 
 --hechos_promocion
-insert into PERSISTENTES.BI_hechos_promocion
-	(hechosPromocion_tiempo_id,hechosPromocion_descuentoPromoAplicada,hechosPromocion_categoria_id)
-select (select tiempo_id from PERSISTENTES.BI_tiempo where tiempo_anio = year(ticket_fecha_hora) and tiempo_mes = MONTH(ticket_fecha_hora)),
-promo_aplicada_descuento,
-(select categoria_id from PERSISTENTES.BI_categoria where mad.categoria_nombre = categoria_nombre)
-from PERSISTENTES.Ticket
-join PERSISTENTES.TicketDetalle on ticket_det_ticket = ticket_id
-join PERSISTENTES.Producto on producto_id = ticket_det_producto
-join PERSISTENTES.Categoria sub on categoria_id = producto_categoria
-join PERSISTENTES.Categoria mad on sub.categoria_madre = mad.categoria_id
-left join PERSISTENTES.PromoAplicada on ticket_det_id = promo_aplicada_ticketDet
-
+insert into
+	PERSISTENTES.BI_hechos_promocion (
+		hechosPromocion_tiempo_id,
+		hechosPromocion_descuentoPromoAplicada,
+		hechosPromocion_categoria_id
+	)
+select
+	tiempo_id,
+	SUM(promo_aplicada_descuento),
+	categoria_id
+from
+	PERSISTENTES.Ticket
+	join PERSISTENTES.TicketDetalle on ticket_det_ticket = ticket_id
+	join PERSISTENTES.Producto on producto_id = ticket_det_producto
+	join PERSISTENTES.Categoria sub on categoria_id = producto_categoria
+	join PERSISTENTES.Categoria mad on sub.categoria_madre = mad.categoria_id
+	left join PERSISTENTES.PromoAplicada on ticket_det_id = promo_aplicada_ticketDet
+	join PERSISTENTES.BI_tiempo on tiempo_anio = year(ticket_fecha_hora) and tiempo_mes = month(ticket_fecha_hora)
+GROUP BY
+	tiempo_id,
+	mad.categoria_id
 
 go
 /*1. Ticket Promedio mensual. Valor promedio de las ventas (en $) según la
