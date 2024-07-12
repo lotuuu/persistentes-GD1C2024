@@ -644,9 +644,6 @@ go
 --select * from PERSISTENTES.Sucursales_con_mayor_importe
 
 /*11. Promedio de importe de la cuota en función del rango etareo del cliente.*/
-go
-DROP FUNCTION PERSISTENTES.preciosPorCuotaPromedio
-go
 CREATE FUNCTION PERSISTENTES.preciosPorCuotaPromedio(@rangoEtarioDescripcion nvarchar(60))
 RETURNS DECIMAL(18,2)
 AS
