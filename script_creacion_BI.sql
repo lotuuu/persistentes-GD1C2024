@@ -139,7 +139,8 @@ create table PERSISTENTES.BI_hechos_pagos
 	hechosPagos_cantidad_cuotas decimal(18,0),
 --	hechosPagos_enCuotas bit,
 	hechosPagos_cantidad_descontada decimal(18,2),
-	hechosPagos_medioDePago nvarchar(255) not null
+	hechosPagos_medioDePago nvarchar(255) not null,
+	hechosPagos_cantidad_pagos int
 
 	constraint PK_BI_hechosPagos primary key (hechosPagos_id)
 )
@@ -263,7 +264,9 @@ AS
 BEGIN
 DECLARE @rangoEtario INT
 SET @rangoEtario = 
-case	when datediff(year,@fecha_nacimiento,GETDATE()) < 25
+case	when @fecha_nacimiento is null
+then 5
+when datediff(year,@fecha_nacimiento,GETDATE()) < 25
 then 1
 when datediff(year,@fecha_nacimiento,GETDATE()) >= 25 and datediff(year,@fecha_nacimiento,GETDATE()) < 35
 then 2
@@ -385,41 +388,68 @@ insert into PERSISTENTES.BI_medioDePago
 	(medio_de_pago,tipo_medio_de_pago)
 select medio_de_pago, medio_de_pago_tipo from PERSISTENTES.MedioDePago
 
+go
+CREATE FUNCTION PERSISTENTES.cantidad_cuotas(@pago_id int)
+RETURNS INT
+AS
+BEGIN
+DECLARE @cantidad_cuotas INT
+SET @cantidad_cuotas =
+	(
+		select
+			case
+				when detalle_pago_tarjeta_cuotas is null then 0
+				else detalle_pago_tarjeta_cuotas
+			end
+		from
+			PERSISTENTES.DetallePagoTarjeta
+			right join PERSISTENTES.Pago p on p.pago_id = detalle_pago_id
+		where
+			p.pago_id = pago_id
+	)
+RETURN @cantidad_cuotas
+END
+go
+
 --BI_hechos_Pagos
-insert into PERSISTENTES.BI_hechos_pagos
-	(hechosPagos_tiempo_id,hechosPagos_rangoEtario_id,hechosPagos_sucursal_id,hechosPagos_importe,hechosPagos_cantidad_cuotas,hechosPagos_cantidad_descontada,hechosPagos_medioDePago)
-select  
-	(select tiempo_id from PERSISTENTES.BI_tiempo where tiempo_anio = year(pago_fecha) and MONTH(pago_fecha) = tiempo_mes),
-	case	when cliente_id is NULL
-			then 5
-			when datediff(year,cliente_fecha_nacimiento,GETDATE()) < 25
-			then 1
-			when datediff(year,cliente_fecha_nacimiento,GETDATE()) >= 25 and datediff(year,cliente_fecha_nacimiento,GETDATE()) < 35
-			then 2
-			when datediff(year,cliente_fecha_nacimiento,GETDATE()) >= 35 and datediff(year,cliente_fecha_nacimiento,GETDATE()) < 50
-			then 3
-			else 4
-			end,
-	(select bi.sucursal_id from PERSISTENTES.BI_sucursal bi
-	join PERSISTENTES.Sucursal s on s.sucursal_nombre = bi.sucursal_nombre
-	where s.sucursal_id = ticket_caja_sucursal),
-	pago_importe,
-	(select	case	when detalle_pago_tarjeta_cuotas is null
-					then 0
-					else detalle_pago_tarjeta_cuotas
-					end
-	from PERSISTENTES.DetallePagoTarjeta
-	right join PERSISTENTES.Pago on pago_id = detalle_pago_id
-	where p.pago_id = pago_id),
-	descuento_aplicado_cant,
-	p.pago_medio_pago
-from PERSISTENTES.Pago p
-join PERSISTENTES.Ticket on ticket_id = pago_ticket
-left join PERSISTENTES.Envio on envio_ticket = ticket_id
-left join PERSISTENTES.Cliente on cliente_id = envio_cliente
-join PERSISTENTES.DescuentoAplicado on descuento_aplicado_pago = pago_id
-join PERSISTENTES.BI_medioDePago mp on mp.medio_de_pago = p.pago_medio_pago
---join PERSISTENTES.Cliente on cliente_id = 
+insert into
+	PERSISTENTES.BI_hechos_pagos (
+		hechosPagos_tiempo_id,
+		hechosPagos_rangoEtario_id,
+		hechosPagos_sucursal_id,
+		hechosPagos_importe,
+		hechosPagos_cantidad_cuotas,
+		hechosPagos_cantidad_descontada,
+		hechosPagos_medioDePago,
+		hechosPagos_cantidad_pagos
+	)
+select
+	tiempo_id,
+	-- puede que aca falte handlear que si cliente_id = null entonces es 5
+	PERSISTENTES.rangoEtario(cliente_fecha_nacimiento),
+	sucursal_id,
+	SUM(pago_importe),
+	isnull(detalle_pago_tarjeta_cuotas,0),
+	SUM(descuento_aplicado_cant),
+	p.pago_medio_pago,
+	count(pago_id)
+from
+	PERSISTENTES.Pago p
+	join PERSISTENTES.Ticket on ticket_id = pago_ticket
+	left join PERSISTENTES.Envio on envio_ticket = ticket_id
+	left join PERSISTENTES.Cliente on cliente_id = envio_cliente
+	join PERSISTENTES.DescuentoAplicado on descuento_aplicado_pago = pago_id
+	join PERSISTENTES.BI_medioDePago mp on mp.medio_de_pago = p.pago_medio_pago
+	join PERSISTENTES.BI_tiempo	on tiempo_anio = year (pago_fecha) and MONTH (pago_fecha) = tiempo_mes
+	join PERSISTENTES.BI_sucursal on sucursal_id = ticket_caja_sucursal
+	join PERSISTENTES.DetallePagoTarjeta on pago_id = detalle_pago_id
+GROUP BY
+	tiempo_id,	--tiempo_id
+	PERSISTENTES.rangoEtario(cliente_fecha_nacimiento),	--rangoEtario
+	sucursal_id,	--sucursal_id
+	isnull(detalle_pago_tarjeta_cuotas,0),	--cantidad_cuotas
+	p.pago_medio_pago	--medio_de_pago
+
 
 --categoria
 insert into PERSISTENTES.BI_categoria
@@ -610,15 +640,67 @@ go
 --select * from PERSISTENTES.Sucursales_con_mayor_importe
 
 /*11. Promedio de importe de la cuota en función del rango etareo del cliente.*/
+go
+DROP FUNCTION PERSISTENTES.preciosPorCuotaPromedio
+go
+CREATE FUNCTION PERSISTENTES.preciosPorCuotaPromedio(@rangoEtarioDescripcion nvarchar(60))
+RETURNS DECIMAL(18,2)
+AS
+BEGIN
+	DECLARE @precioTotal DECIMAL(18,2)
+	DECLARE @contador INT
+
+	-- cursor para recorrer todos los pagos
+	DECLARE @importe DECIMAL(18,2)
+	DECLARE @cuotas INT
+	DECLARE @cantidad_pagos int
+	
+
+	DECLARE @precioPorCuota DECIMAL(18,2)
+
+	DECLARE cur CURSOR FOR
+		SELECT
+			hechosPagos_importe,
+			hechosPagos_cantidad_cuotas,
+			hechosPagos_cantidad_pagos
+		FROM
+			PERSISTENTES.BI_hechos_pagos
+		JOIN PERSISTENTES.BI_rangoEtario ON rangoEtario_id = hechosPagos_rangoEtario_id
+		WHERE
+			rangoEtario_descripcion = @rangoEtarioDescripcion AND
+			hechosPagos_cantidad_cuotas != 0
+
+	SET @precioTotal = 0
+	SET @contador = 0
+
+	OPEN cur
+	FETCH NEXT FROM cur INTO @importe, @cuotas, @cantidad_pagos
+	WHILE @@FETCH_STATUS = 0
+		BEGIN
+			SET @precioPorCuota = @importe / @cuotas
+			SET @precioTotal = @precioTotal + @precioPorCuota * @cantidad_pagos
+
+			SET @contador = @contador + @cantidad_pagos
+
+			FETCH NEXT FROM cur INTO @importe, @cuotas,@cantidad_pagos
+		END
+	
+	CLOSE cur
+	DEALLOCATE cur
+
+	RETURN @precioTotal / @contador
+END
+go
 
 create view PERSISTENTES.Promedio_Importe_Cuota
 as
-select rangoEtario_descripcion, sum(hechosPagos_importe/hechosPagos_cantidad_cuotas)/count(hechosPagos_importe) as Promedio_De_Importe_De_La_Cuota
+select rangoEtario_descripcion, PERSISTENTES.preciosPorCuotaPromedio(rangoEtario_descripcion) as Promedio_De_Importe_De_La_Cuota
 from PERSISTENTES.BI_hechos_pagos
 join PERSISTENTES.BI_rangoEtario on hechosPagos_rangoEtario_id = rangoEtario_id
 where hechosPagos_cantidad_cuotas != 0
 group by rangoEtario_descripcion
 go
+
 
 --select * from PERSISTENTES.Promedio_Importe_Cuota
 
