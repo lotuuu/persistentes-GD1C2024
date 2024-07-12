@@ -164,9 +164,9 @@ alter table PERSISTENTES.BI_hechos_pagos
 
 create table PERSISTENTES.BI_categoria
 (
-	categoria_id INT IDENTITY,
+	categoria_id INT not null,
 	categoria_nombre nvarchar(255),
-	categoria_madre INT NULL
+	categoria_madre INT
 
 	CONSTRAINT PK_BI_Categoria PRIMARY KEY (categoria_id)
 )
@@ -193,7 +193,117 @@ alter table PERSISTENTES.BI_hechos_promocion
 	add constraint FK_BI_hechosPromocion_categoria
 	foreign key (hechosPromocion_categoria_id) references PERSISTENTES.BI_categoria
 
+--FUNCIONES AUX
+go
+CREATE FUNCTION PERSISTENTES.preciosPorCuotaPromedio(@rangoEtarioDescripcion nvarchar(60))
+RETURNS DECIMAL(18,2)
+AS
+BEGIN
+	DECLARE @precioTotal DECIMAL(18,2)
+	DECLARE @contador INT
 
+	-- cursor para recorrer todos los pagos
+	DECLARE @importe DECIMAL(18,2)
+	DECLARE @cuotas INT
+	DECLARE @cantidad_pagos int
+	
+
+	DECLARE @precioPorCuota DECIMAL(18,2)
+
+	DECLARE cur CURSOR FOR
+		SELECT
+			hechosPagos_importe,
+			hechosPagos_cantidad_cuotas,
+			hechosPagos_cantidad_pagos
+		FROM
+			PERSISTENTES.BI_hechos_pagos
+		JOIN PERSISTENTES.BI_rangoEtario ON rangoEtario_id = hechosPagos_rangoEtario_id
+		WHERE
+			rangoEtario_descripcion = @rangoEtarioDescripcion AND
+			hechosPagos_cantidad_cuotas != 0
+
+	SET @precioTotal = 0
+	SET @contador = 0
+
+	OPEN cur
+	FETCH NEXT FROM cur INTO @importe, @cuotas, @cantidad_pagos
+	WHILE @@FETCH_STATUS = 0
+		BEGIN
+			SET @precioPorCuota = @importe / @cuotas
+			SET @precioTotal = @precioTotal + @precioPorCuota * @cantidad_pagos
+
+			SET @contador = @contador + @cantidad_pagos
+
+			FETCH NEXT FROM cur INTO @importe, @cuotas,@cantidad_pagos
+		END
+	
+	CLOSE cur
+	DEALLOCATE cur
+
+	RETURN @precioTotal / @contador
+END
+go
+
+CREATE FUNCTION PERSISTENTES.rangoEtario(@fecha_nacimiento datetime)
+RETURNS INT
+AS
+BEGIN
+DECLARE @rangoEtario INT
+SET @rangoEtario = 
+case	when @fecha_nacimiento is null
+then 5
+when datediff(year,@fecha_nacimiento,GETDATE()) < 25
+then 1
+when datediff(year,@fecha_nacimiento,GETDATE()) >= 25 and datediff(year,@fecha_nacimiento,GETDATE()) < 35
+then 2
+when datediff(year,@fecha_nacimiento,GETDATE()) >= 35 and datediff(year,@fecha_nacimiento,GETDATE()) < 50
+then 3
+else 4
+end
+RETURN @rangoEtario
+END
+go
+
+CREATE FUNCTION PERSISTENTES.turno(@fecha datetime)
+RETURNS INT
+AS
+BEGIN
+DECLARE @turno INT
+SET @turno = 
+case when datepart(hour,@fecha) >= 8 and datepart(hour,@fecha) < 12
+then 1
+when datepart(hour,@fecha) >= 12 and datepart(hour,@fecha) < 16
+then 2
+when datepart(hour,@fecha) >= 16 and datepart(hour,@fecha) < 20
+then 3
+else 4
+end
+RETURN @turno
+END
+go
+
+go
+CREATE FUNCTION PERSISTENTES.cantidad_cuotas(@pago_id int)
+RETURNS INT
+AS
+BEGIN
+DECLARE @cantidad_cuotas INT
+SET @cantidad_cuotas =
+	(
+		select
+			case
+				when detalle_pago_tarjeta_cuotas is null then 0
+				else detalle_pago_tarjeta_cuotas
+			end
+		from
+			PERSISTENTES.DetallePagoTarjeta
+			right join PERSISTENTES.Pago p on p.pago_id = detalle_pago_id
+		where
+			p.pago_id = pago_id
+	)
+RETURN @cantidad_cuotas
+END
+go
 
 --MIGRACION
 
@@ -257,44 +367,6 @@ select '16:00 - 20:00'
 insert into PERSISTENTES.BI_turno
 	(turno_descripcion)
 select 'otros'
-go
-
-CREATE FUNCTION PERSISTENTES.rangoEtario(@fecha_nacimiento datetime)
-RETURNS INT
-AS
-BEGIN
-DECLARE @rangoEtario INT
-SET @rangoEtario = 
-case	when @fecha_nacimiento is null
-then 5
-when datediff(year,@fecha_nacimiento,GETDATE()) < 25
-then 1
-when datediff(year,@fecha_nacimiento,GETDATE()) >= 25 and datediff(year,@fecha_nacimiento,GETDATE()) < 35
-then 2
-when datediff(year,@fecha_nacimiento,GETDATE()) >= 35 and datediff(year,@fecha_nacimiento,GETDATE()) < 50
-then 3
-else 4
-end
-RETURN @rangoEtario
-END
-go
-
-CREATE FUNCTION PERSISTENTES.turno(@fecha datetime)
-RETURNS INT
-AS
-BEGIN
-DECLARE @turno INT
-SET @turno = 
-case when datepart(hour,@fecha) >= 8 and datepart(hour,@fecha) < 12
-then 1
-when datepart(hour,@fecha) >= 12 and datepart(hour,@fecha) < 16
-then 2
-when datepart(hour,@fecha) >= 16 and datepart(hour,@fecha) < 20
-then 3
-else 4
-end
-RETURN @turno
-END
 go
 
 --BI_hechos_ventas
@@ -398,28 +470,6 @@ insert into PERSISTENTES.BI_medioDePago
 	(medio_de_pago,tipo_medio_de_pago)
 select medio_de_pago, medio_de_pago_tipo from PERSISTENTES.MedioDePago
 
-go
-CREATE FUNCTION PERSISTENTES.cantidad_cuotas(@pago_id int)
-RETURNS INT
-AS
-BEGIN
-DECLARE @cantidad_cuotas INT
-SET @cantidad_cuotas =
-	(
-		select
-			case
-				when detalle_pago_tarjeta_cuotas is null then 0
-				else detalle_pago_tarjeta_cuotas
-			end
-		from
-			PERSISTENTES.DetallePagoTarjeta
-			right join PERSISTENTES.Pago p on p.pago_id = detalle_pago_id
-		where
-			p.pago_id = pago_id
-	)
-RETURN @cantidad_cuotas
-END
-go
 
 --BI_hechos_Pagos
 insert into
@@ -463,8 +513,8 @@ GROUP BY
 
 --categoria
 insert into PERSISTENTES.BI_categoria
-	(categoria_nombre,categoria_madre)
-select categoria_nombre, categoria_madre from PERSISTENTES.Categoria
+	(categoria_id,categoria_nombre,categoria_madre)
+select categoria_id, categoria_nombre, categoria_madre from PERSISTENTES.Categoria
 
 --hechos_promocion
 insert into
@@ -475,7 +525,7 @@ insert into
 	)
 select
 	tiempo_id,
-	SUM(promo_aplicada_descuento),
+	SUM(isnull(promo_aplicada_descuento,0)),
 	mad.categoria_id
 from
 	PERSISTENTES.Ticket
@@ -582,6 +632,8 @@ where categoria_id in (select top 3 hechosPromocion_categoria_id from PERSISTENT
 						order by sum(hechosPromocion_descuentoPromoAplicada) desc)
 group by tiempo_anio,tiempo_cuatrimestre, categoria_nombre
 go
+
+--select * from PERSISTENTES.BI_categoria
 --select * from PERSISTENTES.Categorias_Con_Mayor_Descuento_Aplicado
 
 /*7. Porcentaje de cumplimiento de envíos en los tiempos programados por
@@ -644,57 +696,6 @@ go
 --select * from PERSISTENTES.Sucursales_con_mayor_importe
 
 /*11. Promedio de importe de la cuota en función del rango etareo del cliente.*/
-go
-DROP FUNCTION PERSISTENTES.preciosPorCuotaPromedio
-go
-CREATE FUNCTION PERSISTENTES.preciosPorCuotaPromedio(@rangoEtarioDescripcion nvarchar(60))
-RETURNS DECIMAL(18,2)
-AS
-BEGIN
-	DECLARE @precioTotal DECIMAL(18,2)
-	DECLARE @contador INT
-
-	-- cursor para recorrer todos los pagos
-	DECLARE @importe DECIMAL(18,2)
-	DECLARE @cuotas INT
-	DECLARE @cantidad_pagos int
-	
-
-	DECLARE @precioPorCuota DECIMAL(18,2)
-
-	DECLARE cur CURSOR FOR
-		SELECT
-			hechosPagos_importe,
-			hechosPagos_cantidad_cuotas,
-			hechosPagos_cantidad_pagos
-		FROM
-			PERSISTENTES.BI_hechos_pagos
-		JOIN PERSISTENTES.BI_rangoEtario ON rangoEtario_id = hechosPagos_rangoEtario_id
-		WHERE
-			rangoEtario_descripcion = @rangoEtarioDescripcion AND
-			hechosPagos_cantidad_cuotas != 0
-
-	SET @precioTotal = 0
-	SET @contador = 0
-
-	OPEN cur
-	FETCH NEXT FROM cur INTO @importe, @cuotas, @cantidad_pagos
-	WHILE @@FETCH_STATUS = 0
-		BEGIN
-			SET @precioPorCuota = @importe / @cuotas
-			SET @precioTotal = @precioTotal + @precioPorCuota * @cantidad_pagos
-
-			SET @contador = @contador + @cantidad_pagos
-
-			FETCH NEXT FROM cur INTO @importe, @cuotas,@cantidad_pagos
-		END
-	
-	CLOSE cur
-	DEALLOCATE cur
-
-	RETURN @precioTotal / @contador
-END
-go
 
 create view PERSISTENTES.Promedio_Importe_Cuota
 as
